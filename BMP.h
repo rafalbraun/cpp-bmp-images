@@ -3,6 +3,11 @@
 #include <vector>
 #include <stdexcept>
 
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
+
 #pragma pack(push, 1)
 struct BMPFileHeader {
     uint16_t file_type{ 0x4D42 };          // File type always BM which is 0x4D42 (stored as hex uint16_t in little endian)
@@ -38,171 +43,36 @@ struct BMPColorHeader {
 };
 #pragma pack(pop)
 
+class Pair : public std::pair<int,int> {
+public: 
+    Pair(int _first, int _second) : std::pair<int,int>(_first, _second) {}
+    friend std::ostream& operator<<(std::ostream &out, const Pair &p) {
+        std::cout << p.first << "," << p.second;
+        return out;
+    }
+};
+struct Sectors : public std::vector<Pair> {};
+typedef std::vector<Pair>::iterator SectorsIterator;
+
 struct BMP {
     BMPFileHeader file_header;
     BMPInfoHeader bmp_info_header;
     BMPColorHeader bmp_color_header;
     std::vector<uint8_t> data;
-
-    BMP(const char *fname) {
-        read(fname);
-    }
-
-    void read(const char *fname) {
-        std::ifstream inp{ fname, std::ios_base::binary };
-        if (inp) {
-            inp.read((char*)&file_header, sizeof(file_header));
-            if(file_header.file_type != 0x4D42) {
-                throw std::runtime_error("Error! Unrecognized file format.");
-            }
-            inp.read((char*)&bmp_info_header, sizeof(bmp_info_header));
-
-            // The BMPColorHeader is used only for transparent images
-            if(bmp_info_header.bit_count == 32) {
-                // Check if the file has bit mask color information
-                if(bmp_info_header.size >= (sizeof(BMPInfoHeader) + sizeof(BMPColorHeader))) {
-                    inp.read((char*)&bmp_color_header, sizeof(bmp_color_header));
-                    // Check if the pixel data is stored as BGRA and if the color space type is sRGB
-                    check_color_header(bmp_color_header);
-                } else {
-                    std::cerr << "Error! The file \"" << fname << "\" does not seem to contain bit mask information\n";
-                    throw std::runtime_error("Error! Unrecognized file format.");
-                }
-            }
-
-            // Jump to the pixel data location
-            inp.seekg(file_header.offset_data, inp.beg);
-
-            // Adjust the header fields for output.
-            // Some editors will put extra info in the image file, we only save the headers and the data.
-            if(bmp_info_header.bit_count == 32) {
-                bmp_info_header.size = sizeof(BMPInfoHeader) + sizeof(BMPColorHeader);
-                file_header.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader) + sizeof(BMPColorHeader);
-            } else {
-                bmp_info_header.size = sizeof(BMPInfoHeader);
-                file_header.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
-            }
-            file_header.file_size = file_header.offset_data;
-
-            if (bmp_info_header.height < 0) {
-                throw std::runtime_error("The program can treat only BMP images with the origin in the bottom left corner!");
-            }
-
-            data.resize(bmp_info_header.width * bmp_info_header.height * bmp_info_header.bit_count / 8);
-
-            // Here we check if we need to take into account row padding
-            if (bmp_info_header.width % 4 == 0) {
-                inp.read((char*)data.data(), data.size());
-                file_header.file_size += data.size();
-            }
-            else {
-                row_stride = bmp_info_header.width * bmp_info_header.bit_count / 8;
-                uint32_t new_stride = make_stride_aligned(4);
-                std::vector<uint8_t> padding_row(new_stride - row_stride);
-
-                for (int y = 0; y < bmp_info_header.height; ++y) {
-                    inp.read((char*)(data.data() + row_stride * y), row_stride);
-                    inp.read((char*)padding_row.data(), padding_row.size());
-                }
-                file_header.file_size += data.size() + bmp_info_header.height * padding_row.size();
-            }
-        }
-        else {
-            throw std::runtime_error("Unable to open the input image file.");
-        }
-    }
-
-    BMP(int32_t width, int32_t height, bool has_alpha = true) {
-        if (width <= 0 || height <= 0) {
-            throw std::runtime_error("The image width and height must be positive numbers.");
-        }
-
-        bmp_info_header.width = width;
-        bmp_info_header.height = height;
-        if (has_alpha) {
-            bmp_info_header.size = sizeof(BMPInfoHeader) + sizeof(BMPColorHeader);
-            file_header.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader) + sizeof(BMPColorHeader);
-
-            bmp_info_header.bit_count = 32;
-            bmp_info_header.compression = 3;
-            row_stride = width * 4;
-            data.resize(row_stride * height);
-            file_header.file_size = file_header.offset_data + data.size();
-        }
-        else {
-            bmp_info_header.size = sizeof(BMPInfoHeader);
-            file_header.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
-
-            bmp_info_header.bit_count = 24;
-            bmp_info_header.compression = 0;
-            row_stride = width * 3;
-            data.resize(row_stride * height);
-
-            uint32_t new_stride = make_stride_aligned(4);
-            file_header.file_size = file_header.offset_data + data.size() + bmp_info_header.height * (new_stride - row_stride);
-        }
-    }
-
-    void write(const char *fname) {
-        std::ofstream of{ fname, std::ios_base::binary };
-        if (of) {
-            if (bmp_info_header.bit_count == 32) {
-                write_headers_and_data(of);
-            }
-            else if (bmp_info_header.bit_count == 24) {
-                if (bmp_info_header.width % 4 == 0) {
-                    write_headers_and_data(of);
-                }
-                else {
-                    uint32_t new_stride = make_stride_aligned(4);
-                    std::vector<uint8_t> padding_row(new_stride - row_stride);
-
-                    write_headers(of);
-
-                    for (int y = 0; y < bmp_info_header.height; ++y) {
-                        of.write((const char*)(data.data() + row_stride * y), row_stride);
-                        of.write((const char*)padding_row.data(), padding_row.size());
-                    }
-                }
-            }
-            else {
-                throw std::runtime_error("The program can treat only 24 or 32 bits per pixel BMP files");
-            }
-        }
-        else {
-            throw std::runtime_error("Unable to open the output image file.");
-        }
-    }
-
-    void fill_region(uint32_t x0, uint32_t y0, uint32_t w, uint32_t h, uint8_t B, uint8_t G, uint8_t R, uint8_t A) {
-        if (x0 + w > (uint32_t)bmp_info_header.width || y0 + h > (uint32_t)bmp_info_header.height) {
-            throw std::runtime_error("The region does not fit in the image!");
-        }
-
-        uint32_t channels = bmp_info_header.bit_count / 8;
-        for (uint32_t y = y0; y < y0 + h; ++y) {
-            for (uint32_t x = x0; x < x0 + w; ++x) {
-                data[channels * (y * bmp_info_header.width + x) + 0] = B;
-                data[channels * (y * bmp_info_header.width + x) + 1] = G;
-                data[channels * (y * bmp_info_header.width + x) + 2] = R;
-                if (channels == 4) {
-                    data[channels * (y * bmp_info_header.width + x) + 3] = A;
-                }
-            }
-        }
-    }
-
-    void draw_rectangle(uint32_t x0, uint32_t y0, uint32_t w, uint32_t h, 
-                        uint8_t B, uint8_t G, uint8_t R, uint8_t A, uint8_t line_w) {
-        if (x0 + w > (uint32_t)bmp_info_header.width || y0 + h > (uint32_t)bmp_info_header.height) {
-            throw std::runtime_error("The rectangle does not fit in the image!");
-        }
-
-        fill_region(x0, y0, w, line_w, B, G, R, A);                                             // top line
-        fill_region(x0, (y0 + h - line_w), w, line_w, B, G, R, A);                              // bottom line
-        fill_region((x0 + w - line_w), (y0 + line_w), line_w, (h - (2 * line_w)), B, G, R, A);  // right line
-        fill_region(x0, (y0 + line_w), line_w, (h - (2 * line_w)), B, G, R, A);                 // left line
-    }
+    
+    BMP(const char *fname);
+    BMP(int32_t width, int32_t height, bool has_alpha);
+    void read(const char *fname);
+    void write(const char *fname);
+    void set_pixel(int row, int col, uint32_t r, uint32_t g, uint32_t b);
+    void draw_line(int y0, int y1, int x0, int x1);
+    void flatten();
+    bool is_crossing(int x0, int y0, int x1, int y1);
+    bool is_pixel_white(int row, int col);
+    void color();
+    Sectors* discover_sectors();
+    bool IsSectorStart(int index);
+    bool IsSectorEnd(int index);
 
 private:
     uint32_t row_stride{ 0 };
@@ -242,4 +112,38 @@ private:
             throw std::runtime_error("Unexpected color space type! The program expects sRGB values");
         }
     }
+
+    void validate_pixel(int row, int col) {
+        if (row < 0 || row >= bmp_info_header.width) {
+            throw std::runtime_error("Wrong coordinates, the x coord is either too large or too small.");
+        }
+        if (col < 0 || col >= bmp_info_header.height) {
+            throw std::runtime_error("Wrong coordinates, the y coord is either too large or too small.");
+        }
+    }
 };
+
+
+/*
+    struct Pixel {
+        uint8_t r,g,b,a;
+
+        Pixel() {}
+        Pixel(uint8_t B, uint8_t G, uint8_t R) 
+        {
+            this->r = R;
+            this->g = G;
+            this->b = B;
+        }
+        friend std::ostream& operator<<(std::ostream &out, const Pixel &p)
+        {
+            //out << p.R << "," << p.G << "," << p.B << "|";
+            //std::cout << "R:0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(p.R) << " ";
+            //std::cout << "G:0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(p.G) << " ";
+            //std::cout << "B:0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(p.B) << std::endl;
+            std::cout << (int)p.r << "," << (int)p.g << "," << (int)p.b << std::endl;
+            return out;
+        }
+    };
+
+*/

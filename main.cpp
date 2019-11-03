@@ -1,7 +1,46 @@
 #include <iostream>
+#include <iterator>
 #include "BMP.h"
 
+//
+// g++ BMP.cpp -c -o BMP.o && g++ -c main.cpp -o main.o && g++ main.o BMP.o
+//
+
 int main() {
+
+	//BMP bmp9("zzz1.bmp");
+	//BMP bmp9("red-box-background.bmp");
+	BMP bmp9("test.bmp");
+	//bmp9.fill_region(50, 50, 100, 100, 0, 0, 0, 0);
+	//bmp9.write("zzz2.bmp");
+	
+	bmp9.color();
+	bmp9.write("zzz4.bmp");
+
+	Sectors* sectors = bmp9.discover_sectors();
+	// std::ostream_iterator<std::pait<int,int>> plikWy(std::cout, " ");
+	// std::copy(sectors->begin(), sectors->end(), plikWy); std::cout << std::endl;
+	
+	//std::cout << sectors->begin()->first << std::endl;
+	//std::cout << sectors->begin()->second << std::endl;
+
+	//std::cout << *(sectors->begin()) << std::endl;
+	for(Sectors::iterator it = sectors->begin(); it != sectors->end(); it++) {
+		std::cout << *it << std::endl;
+	}
+	//std::cout << sectors->size() << std::endl;
+
+	return 0;
+
+	//bmp9.copy_region(0, 0, 10, 10, "zzz3.bmp");
+	//bmp9.read_into_matrix(0,0,20,20);
+	bmp9.draw_line(0,490,600,490);
+	bmp9.flatten();
+	std::cout << bmp9.is_crossing(0,490,600,490) << std::endl;
+	std::cout << bmp9.is_crossing(0,500,600,500) << std::endl;
+	bmp9.write("zzz4.bmp");
+
+	/*
 	BMP bmp9("t1_24.bmp");
 	bmp9.fill_region(0, 0, 50, 50, 0, 0, 255, 255);
 	bmp9.fill_region(150, 0, 100, 150, 0, 255, 0, 255);
@@ -50,4 +89,5 @@ int main() {
 	BMP bmp11("test_pnet.bmp");
 	bmp11.fill_region(0, 0, 100, 100, 255, 0, 255, 255);
 	bmp11.write("test_pnet_copy.bmp");
+	*/
 }
