@@ -1,5 +1,9 @@
 #include "BMP.h"
 
+//
+// https://web.archive.org/web/20130806153902/http://www.etechplanet.com/codesnippets/computer-graphics-draw-a-line-using-bresenham-algorithm.aspx
+//
+
 BMP::BMP(const char *fname) {
     read(fname);
 }
@@ -136,6 +140,16 @@ void BMP::set_pixel(int row, int col, uint32_t r, uint32_t g, uint32_t b) {
     data[size - 3*width*col - 3*trans -3] = b;
 }
 
+Pixel BMP::get_pixel(int row, int col) {
+    this->validate_pixel(row, col);
+    long size = data.size();
+    int width = bmp_info_header.width;
+    int trans = width - 1 - row;    
+    return Pixel(data[size - 3*width*col - 3*trans -1],
+                 data[size - 3*width*col - 3*trans -2],
+                 data[size - 3*width*col - 3*trans -3]);
+}
+
 bool BMP::is_pixel_white(int row, int col) {
     this->validate_pixel(row, col);
     long size = data.size();
@@ -144,6 +158,7 @@ bool BMP::is_pixel_white(int row, int col) {
     int r = data[size - 3*width*col - 3*trans -1];
     int g = data[size - 3*width*col - 3*trans -2];
     int b = data[size - 3*width*col - 3*trans -3];
+    //std::cout << row << " , " << col << std::endl;
     return (r == 255 && g == 255 && b == 255) ? true : false;
 }
 
@@ -151,7 +166,7 @@ void BMP::flatten() {
     std::replace_if(data.begin(), data.end(),
                     bind2nd(std::greater<int>(),240), 255);
 }
-
+/*
 void BMP::draw_line(int x0, int y0, int x1, int y1) {
     int dx, dy, p, x, y;
 
@@ -175,7 +190,78 @@ void BMP::draw_line(int x0, int y0, int x1, int y1) {
         x=x+1;
     }
 }
+*/
 
+void BMP::draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB)
+{
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    dx = x2 - x1;
+    dy = y2 - y1;
+    dx1 = fabs(dx);
+    dy1 = fabs(dy);
+    px = 2 * dy1 - dx1;
+    py = 2 * dx1 - dy1;
+    if (dy1 <= dx1) {
+        if (dx >= 0) {
+            x = x1;
+            y = y1;
+            xe = x2;
+        }
+        else {
+            x = x2;
+            y = y2;
+            xe = x1;
+        }
+        this->set_pixel(x, y, colR, colG, colB);
+        for (i = 0; x < xe; i++) {
+            x = x + 1;
+            if (px < 0) {
+                px = px + 2 * dy1;
+            }
+            else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    y = y + 1;
+                }
+                else {
+                    y = y - 1;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
+            this->set_pixel(x, y, colR, colG, colB);
+        }
+    }
+    else {
+        if (dy >= 0) {
+            x = x1;
+            y = y1;
+            ye = y2;
+        }
+        else {
+            x = x2;
+            y = y2;
+            ye = y1;
+        }
+        this->set_pixel(x, y, colR, colG, colB);
+        for (i = 0; y < ye; i++) {
+            y = y + 1;
+            if (py <= 0) {
+                py = py + 2 * dx1;
+            }
+            else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    x = x + 1;
+                }
+                else {
+                    x = x - 1;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            this->set_pixel(x, y, colR, colG, colB);
+        }
+    }
+}
+
+/*
 bool BMP::is_crossing(int x0, int y0, int x1, int y1) {
     int dx, dy, p, x, y;
 
@@ -203,44 +289,243 @@ bool BMP::is_crossing(int x0, int y0, int x1, int y1) {
         x=x+1;
     }
     return false;
+}*/
+
+bool BMP::is_crossing(int x1, int y1, int x2, int y2)
+{
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    dx = x2 - x1;
+    dy = y2 - y1;
+    dx1 = fabs(dx);
+    dy1 = fabs(dy);
+    px = 2 * dy1 - dx1;
+    py = 2 * dx1 - dy1;
+    if (dy1 <= dx1) {
+        if (dx >= 0) {
+            x = x1;
+            y = y1;
+            xe = x2;
+        }
+        else {
+            x = x2;
+            y = y2;
+            xe = x1;
+        }
+        if (this->is_pixel_white(x, y) != true) {
+            return true;
+        }
+        for (i = 0; x < xe; i++) {
+            x = x + 1;
+            if (px < 0) {
+                px = px + 2 * dy1;
+            }
+            else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    y = y + 1;
+                }
+                else {
+                    y = y - 1;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
+            if (this->is_pixel_white(x, y) != true) {
+                return true;
+            }
+        }
+    }
+    else {
+        if (dy >= 0) {
+            x = x1;
+            y = y1;
+            ye = y2;
+        }
+        else {
+            x = x2;
+            y = y2;
+            ye = y1;
+        }
+        if (this->is_pixel_white(x, y) != true) {
+            return true;
+        }
+        for (i = 0; y < ye; i++) {
+            y = y + 1;
+            if (py <= 0) {
+                py = py + 2 * dx1;
+            }
+            else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    x = x + 1;
+                }
+                else {
+                    x = x - 1;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            if (this->is_pixel_white(x, y) != true) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
-void BMP::color() {
+void BMP::colorY(int yStart, int yEnd) {
     int width = bmp_info_header.width;
-    int height = bmp_info_header.height;
-
-    for(int i=0; i<height; i++) {
-        if(this->is_crossing(0,i,width,i) != true) {
-            this->draw_line(0,i,width,i);
+    for(int i=yStart; i<yEnd; i++) {
+        if(this->is_crossing(0,i,width-1,i) != true) {
+            this->draw_line(0,i,width-1,i,0,0,255);
         }
     }
 }
 
-bool BMP::IsSectorStart(int index) {
-    return (this->is_pixel_white(0,index) == false && this->is_pixel_white(0,index+1) == true);
-}
-bool BMP::IsSectorEnd(int index) {
-    return (this->is_pixel_white(0,index) == true && this->is_pixel_white(0,index+1) == false);
+void BMP::colorX(int xStart, int xEnd) {
+    int height = bmp_info_header.height;
+    for(int i=xStart; i<xEnd; i++) {
+        if(this->is_crossing(i,0,i,height) != true) {
+            this->draw_line(i,0,i,height,0,0,255);
+        }
+    }
 }
 
-Sectors* BMP::discover_sectors() {
+void BMP::colorXxxxxLeft(int yStart, int yEnd) {
+    // int width = bmp_info_header.width;
+    // for(int i=yStart; i<yEnd; i++) {
+    //     if(this->is_crossing(0,i,width-1,i) != true) {
+    //         this->draw_line(0,i,width-1,i,255,255,0);
+    //     }
+    // }
+    int width = bmp_info_header.width;
+    for(int i=yStart; i<yEnd; i++) {
+        for(int j=0; j<width-1; j++) {
+            if(this->is_crossing(j,yStart,j,yEnd+1) != true) {  // do weryfikacji dlaczego +1
+                this->draw_line(j,yStart,j,yEnd+1,0,0,255);     // do weryfikacji dlaczego +1
+            } else {
+                return;
+            }
+        }
+    }
+}
+
+void BMP::colorXxxxxRight(int yStart, int yEnd) {
+    int width = bmp_info_header.width;
+    for(int i=yStart; i<yEnd-1; i++) {
+        for(int j=width-1; j>0; j--) {
+            if(this->is_crossing(j,yStart,j,yEnd) != true) {
+                this->draw_line(j,yStart,j,yEnd,0,0,255);
+            } else {
+                return;
+            }
+        }
+    }
+}
+
+void BMP::findSectorsY(int yStart, int yEnd, std::vector<Sector>& sectors) {
+    int tmp;
+    for(int i=yStart; i<yEnd-1; i++) {
+        Pixel p1 = get_pixel(0, i);
+        Pixel p2 = get_pixel(0, i+1);
+        //std::cout << p1 << " \t\t| " << p2 << std::endl;
+        if (p1.isBlack() && p2.isWhite()) {
+            tmp = i;
+        }
+        if (p1.isWhite() && p2.isBlack()) {
+            sectors.push_back(Sector(tmp, i, 0, 0));
+            std::cout << "(" << tmp << "," << i << ",0,0)" << std::endl;
+        }
+    }
+}
+
+void BMP::findSectors(std::vector<Sector>& sectors) {
+    for(auto it = sectors.begin(); it != sectors.end(); ++it) {
+        colorXxxxxLeft(it->x0+1, it->x1-1);
+        colorXxxxxRight(it->x0+1, it->x1-1);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// void BMP::findSectorsX(int xStart, int xEnd, std::vector<Sector>& sectors) {
+//     int tmp;
+//     for(int i=xStart; i<xEnd; i++) {
+//         Pixel p1 = get_pixel(0, i);
+//         Pixel p2 = get_pixel(0, i+1);
+//         if (p1.isBlack() && p2.isWhite()) {
+//             tmp = i;
+//         }
+//         if (p1.isWhite() && p2.isBlack()) {
+//             sectors.push_back(Sector(0, 0, tmp, i)); 
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+/*
+bool BMP::IsSectorStartY(int index) {
+    return (this->is_pixel_white(0,index) == false && this->is_pixel_white(0,index+1) == true);
+}
+bool BMP::IsSectorEndY(int index) {
+    return (this->is_pixel_white(0,index) == true && this->is_pixel_white(0,index+1) == false);
+}
+bool BMP::IsSectorStartX(int index) {
+    return (this->is_pixel_white(index,0) == false && this->is_pixel_white(index+1,0) == true);
+}
+bool BMP::IsSectorEndX(int index) {
+    return (this->is_pixel_white(index,0) == true && this->is_pixel_white(index+1,0) == false);
+}
+
+Sectors* BMP::discover_sectors_y() {
     Sectors* sectors_ptr = new Sectors();
     int height = bmp_info_header.height;
     int sec_start = is_pixel_white(0,0);
     for(int i=1; i<height-1; i++) {
-        if (IsSectorStart(i)) {
+        if (IsSectorStartY(i)) {
             sec_start = i;
-        } else if (IsSectorEnd(i)) {
+        } else if (IsSectorEndY(i)) {
             Pair pair(sec_start,i);
             sectors_ptr->push_back(pair);
         }
-        // if(is_pixel_white(0,i) == true) {
-        //     std::cout << "true " << i << std::endl;
-        // } else {
-        //     std::cout << "false " << i << std::endl;            
-        // }
     }
-    //Pair pair(1,1);
-    //sectors_ptr->push_back(pair);
     return sectors_ptr;
 }
+
+Sectors* BMP::discover_sectors_x() {
+    Sectors* sectors_ptr = new Sectors();
+    int height = bmp_info_header.height;
+    int sec_start = is_pixel_white(0,0);
+    for(int i=1; i<height-1; i++) {
+        if (IsSectorStartX(i)) {
+            sec_start = i;
+        } else if (IsSectorEndX(i)) {
+            Pair pair(sec_start,i);
+            sectors_ptr->push_back(pair);
+        }
+    }
+    return sectors_ptr;
+}
+*/

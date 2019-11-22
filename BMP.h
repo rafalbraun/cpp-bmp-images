@@ -7,6 +7,8 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <cmath>
+#include <string> 
 
 #pragma pack(push, 1)
 struct BMPFileHeader {
@@ -43,16 +45,52 @@ struct BMPColorHeader {
 };
 #pragma pack(pop)
 
-class Pair : public std::pair<int,int> {
-public: 
-    Pair(int _first, int _second) : std::pair<int,int>(_first, _second) {}
-    friend std::ostream& operator<<(std::ostream &out, const Pair &p) {
-        std::cout << p.first << "," << p.second;
+// class Pair {
+// public: 
+//     Pair(int _first, int _second) : first(_first), second(_second) {}
+//     friend std::ostream& operator<<(std::ostream &out, const Pair &p) {
+//         std::cout << p.first << "," << p.second;
+//         return out;
+//     }
+// private:
+//     int first, second, third, fourth; // x0,y0,x1,y1
+// };
+// struct Sectors : public std::vector<Pair> {};
+// typedef std::vector<Pair>::iterator SectorsIterator;
+
+class Pixel {
+public:
+    Pixel() {}
+    Pixel(int r, int g, int b) {
+        this->r = r;
+        this->g = g;
+        this->b = b;
+    }
+    uint32_t r, g, b;
+    bool isBlack() { return r==0&&g==0&&b==255;}
+    bool isWhite() { return r==255&&g==255&&b==255;}
+
+    friend std::ostream& operator<<(std::ostream &out, const Pixel &p) {
+        std::cout << p.r << "," << p.g << "," << p.b;
         return out;
     }
 };
-struct Sectors : public std::vector<Pair> {};
-typedef std::vector<Pair>::iterator SectorsIterator;
+
+class Sector {
+public:
+    Sector() {}
+    Sector(int _x0, int _x1, int _y0, int _y1) : x0(_x0), x1(_x1), y0(_y0), y1(_y1) {}
+    friend std::ostream& operator<<(std::ostream &out, const Sector &s) {
+        std::cout << s.x0 << "," << s.x1;
+        return out;
+    }
+    void setX0(int x0) { this->x0 = x0; }
+    void setX1(int x1) { this->x1 = x1; }
+    void setY0(int y0) { this->y0 = y0; }
+    void setY1(int y1) { this->y1 = y1; }
+//private:
+    int x0,y0,x1,y1;
+};
 
 struct BMP {
     BMPFileHeader file_header;
@@ -65,14 +103,24 @@ struct BMP {
     void read(const char *fname);
     void write(const char *fname);
     void set_pixel(int row, int col, uint32_t r, uint32_t g, uint32_t b);
-    void draw_line(int y0, int y1, int x0, int x1);
+    Pixel get_pixel(int row, int col);
+    void draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB);
     void flatten();
     bool is_crossing(int x0, int y0, int x1, int y1);
     bool is_pixel_white(int row, int col);
-    void color();
-    Sectors* discover_sectors();
-    bool IsSectorStart(int index);
-    bool IsSectorEnd(int index);
+    void colorX(int,int);
+    void colorY(int,int);
+    // Sectors* discover_sectors_y();
+    // Sectors* discover_sectors_x();
+    // bool IsSectorStartX(int index);
+    // bool IsSectorEndX(int index);
+    // bool IsSectorStartY(int index);
+    // bool IsSectorEndY(int index);
+    void findSectorsY(int yStart, int yEnd, std::vector<Sector>& sectors);
+
+    void findSectors(std::vector<Sector>& sectors);
+    void colorXxxxxLeft(int yStart, int yEnd);
+    void colorXxxxxRight(int yStart, int yEnd);
 
 private:
     uint32_t row_stride{ 0 };
@@ -114,11 +162,13 @@ private:
     }
 
     void validate_pixel(int row, int col) {
+        //std::cout << __func__ << std::endl;
+        //std::cout << "validate_pixel:" << std::to_string(row) + "," + std::to_string(col) + "]" << std::endl;
         if (row < 0 || row >= bmp_info_header.width) {
-            throw std::runtime_error("Wrong coordinates, the x coord is either too large or too small.");
+            throw std::runtime_error("Wrong coordinates, the x coord is either too large or too small: [" + std::to_string(row) + "," + std::to_string(col) + "]");
         }
         if (col < 0 || col >= bmp_info_header.height) {
-            throw std::runtime_error("Wrong coordinates, the y coord is either too large or too small.");
+            throw std::runtime_error("Wrong coordinates, the y coord is either too large or too small: [" + std::to_string(row) + "," + std::to_string(col) + "]");
         }
     }
 };
