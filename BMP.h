@@ -79,17 +79,13 @@ public:
 class Sector {
 public:
     Sector() {}
-    Sector(int _x0, int _x1, int _y0, int _y1) : x0(_x0), x1(_x1), y0(_y0), y1(_y1) {}
-    friend std::ostream& operator<<(std::ostream &out, const Sector &s) {
-        std::cout << s.x0 << "," << s.x1;
-        return out;
-    }
-    void setX0(int x0) { this->x0 = x0; }
-    void setX1(int x1) { this->x1 = x1; }
-    void setY0(int y0) { this->y0 = y0; }
-    void setY1(int y1) { this->y1 = y1; }
+    Sector(int _left, int _right, int _top, int _bottom) : left(_left), right(_right), bottom(_bottom), top(_top) {}
+    // friend std::ostream& operator<<(std::ostream &out, const Sector &s) {
+    //     std::cout << s.left << "," << s.x1;
+    //     return out;
+    // }
 //private:
-    int x0,y0,x1,y1;
+    int left,right,top,bottom;
 };
 
 struct BMP {
@@ -119,8 +115,8 @@ struct BMP {
     void findSectorsY(int yStart, int yEnd, std::vector<Sector>& sectors);
 
     void findSectors(std::vector<Sector>& sectors);
-    void colorXxxxxLeft(int yStart, int yEnd);
-    void colorXxxxxRight(int yStart, int yEnd);
+    int colorXxxxxLeft(int yStart, int yEnd);
+    int colorXxxxxRight(int yStart, int yEnd);
 
 private:
     uint32_t row_stride{ 0 };

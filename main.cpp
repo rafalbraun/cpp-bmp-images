@@ -47,6 +47,10 @@ void test6() {
 	bmp1.findSectorsY(0,900,sectors);
 	bmp1.findSectors(sectors);
 	bmp1.write("zzz8.bmp");
+	
+    for(auto it = sectors.begin(); it != sectors.end(); ++it) {
+        std::cout << "(" << it->left << "," << it->right << "," << it->top << "," << it->bottom << ")" << std::endl;
+    }
 }
 
 int main() {

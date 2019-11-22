@@ -387,7 +387,7 @@ void BMP::colorX(int xStart, int xEnd) {
     }
 }
 
-void BMP::colorXxxxxLeft(int yStart, int yEnd) {
+int BMP::colorXxxxxLeft(int yStart, int yEnd) {
     // int width = bmp_info_header.width;
     // for(int i=yStart; i<yEnd; i++) {
     //     if(this->is_crossing(0,i,width-1,i) != true) {
@@ -395,28 +395,34 @@ void BMP::colorXxxxxLeft(int yStart, int yEnd) {
     //     }
     // }
     int width = bmp_info_header.width;
+    int tmp;
     for(int i=yStart; i<yEnd; i++) {
         for(int j=0; j<width-1; j++) {
             if(this->is_crossing(j,yStart,j,yEnd+1) != true) {  // do weryfikacji dlaczego +1
                 this->draw_line(j,yStart,j,yEnd+1,0,0,255);     // do weryfikacji dlaczego +1
+                tmp = j;
             } else {
-                return;
+                return tmp;
             }
         }
     }
+    return tmp;
 }
 
-void BMP::colorXxxxxRight(int yStart, int yEnd) {
+int BMP::colorXxxxxRight(int yStart, int yEnd) {
     int width = bmp_info_header.width;
+    int tmp;
     for(int i=yStart; i<yEnd-1; i++) {
         for(int j=width-1; j>0; j--) {
-            if(this->is_crossing(j,yStart,j,yEnd) != true) {
-                this->draw_line(j,yStart,j,yEnd,0,0,255);
+            if(this->is_crossing(j,yStart,j,yEnd+1) != true) {
+                this->draw_line(j,yStart,j,yEnd+1,0,0,255);
+                tmp = j;
             } else {
-                return;
+                return tmp;
             }
         }
     }
+    return tmp;
 }
 
 void BMP::findSectorsY(int yStart, int yEnd, std::vector<Sector>& sectors) {
@@ -429,16 +435,23 @@ void BMP::findSectorsY(int yStart, int yEnd, std::vector<Sector>& sectors) {
             tmp = i;
         }
         if (p1.isWhite() && p2.isBlack()) {
-            sectors.push_back(Sector(tmp, i, 0, 0));
-            std::cout << "(" << tmp << "," << i << ",0,0)" << std::endl;
+            sectors.push_back(Sector(0, 0, tmp, i));
+            //std::cout << "(" << tmp << "," << i << ",0,0)" << std::endl;
         }
     }
 }
 
 void BMP::findSectors(std::vector<Sector>& sectors) {
+    int borderLeft=100, borderRight=100;
     for(auto it = sectors.begin(); it != sectors.end(); ++it) {
-        colorXxxxxLeft(it->x0+1, it->x1-1);
-        colorXxxxxRight(it->x0+1, it->x1-1);
+        borderLeft = colorXxxxxLeft(it->top+1, it->bottom-1);
+        borderRight = colorXxxxxRight(it->top+1, it->bottom-1);
+        if (borderLeft > 0) {
+            it->left = borderLeft;
+        }
+        if (borderRight > 0) {
+            it->right = borderRight;
+        }
     }
 }
 
