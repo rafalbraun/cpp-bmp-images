@@ -140,6 +140,15 @@ void BMP::set_pixel(int row, int col, uint32_t r, uint32_t g, uint32_t b) {
     data[size - 3*width*col - 3*trans -3] = b;
 }
 
+int BMP::get_pos(int row, int col) {
+    this->validate_pixel(row, col);
+    long size = data.size();
+    int width = bmp_info_header.width;
+    int trans = width - 1 - row;
+    int start = size - 3*width*col - 3*trans -1;
+    return start;
+}
+
 Pixel BMP::get_pixel(int row, int col) {
     this->validate_pixel(row, col);
     long size = data.size();

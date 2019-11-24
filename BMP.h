@@ -101,6 +101,7 @@ struct BMP {
     void set_pixel(int row, int col, uint32_t r, uint32_t g, uint32_t b);
     Pixel get_pixel(int row, int col);
     void draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB);
+    int get_pos(int row, int col);
     void flatten();
     bool is_crossing(int x0, int y0, int x1, int y1);
     bool is_pixel_white(int row, int col);
