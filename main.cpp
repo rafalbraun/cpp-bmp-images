@@ -49,9 +49,18 @@ void test6(const char* filename, int from, int to, std::vector<Sector>& sectors)
 
     for(auto it = sectors.begin(); it != sectors.end(); ++it) {
         std::cout << "(" << it->left << "," << it->right << "," << it->top << "," << it->bottom << ")" << std::endl;
-        std::cout << "start:" << bmp1.get_pos(it->left, it->top) << std::endl;
-        std::cout << "end:" << bmp1.get_pos(it->right, it->bottom) << std::endl;
+        std::cout << "start: " << bmp1.get_pos(it->left, it->top) << std::endl;
+        std::cout << "end: " << bmp1.get_pos(it->right, it->bottom) << std::endl;
+        std::cout << "width: " <<  it->right - it->left << std::endl;
+        std::cout << "height: " <<  it->bottom - it->top << std::endl;
     }
+}
+
+void test7(const char* filename) {
+    //BMP bmp2(418, 14, 309326, 333272, bmp1);
+    
+    BMP bmp2(filename, 600, 3, 0,0);
+    bmp2.write("dupa2.bmp");
 }
 
 int main() {
@@ -63,9 +72,12 @@ int main() {
 	//test1();
 	//test2();
 	//test5();
-	//test6("test1.bmp", 0, 900);
-	test6("xd.bmp", 0, 5405, sectors);
+	//test6("xd.bmp", 0, 5405, sectors);
 	
+	//test6("test1.bmp", 0, 900, sectors);
+	//test7("test1_crop_before.bmp");
+	test7("dupa1.bmp");
+
     
 	return 0;
 }

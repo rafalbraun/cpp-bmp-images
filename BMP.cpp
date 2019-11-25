@@ -6,9 +6,11 @@
 
 BMP::BMP(const char *fname) {
     read(fname);
+    //std::cout << bmp_info_header.bit_count << std::endl;
 }
 
 BMP::BMP(int32_t width, int32_t height, bool has_alpha = true) {
+    std::cout << "dupa" << std::endl;
     if (width <= 0 || height <= 0) {
         throw std::runtime_error("The image width and height must be positive numbers.");
     }
@@ -24,8 +26,7 @@ BMP::BMP(int32_t width, int32_t height, bool has_alpha = true) {
         row_stride = width * 4;
         data.resize(row_stride * height);
         file_header.file_size = file_header.offset_data + data.size();
-    }
-    else {
+    } else {
         bmp_info_header.size = sizeof(BMPInfoHeader);
         file_header.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
 
@@ -38,6 +39,51 @@ BMP::BMP(int32_t width, int32_t height, bool has_alpha = true) {
         file_header.file_size = file_header.offset_data + data.size() + bmp_info_header.height * (new_stride - row_stride);
     }
 }
+
+/*
+198272−174323 = 23949
+417 * 14 * 24 / 8 = 17514
+*/
+BMP::BMP(const char* fname, int32_t width, int32_t height, int32_t start, int32_t end) : BMP(width, height, false) {
+    // this->data.resize(0);
+    // std::cout << "start" << std::endl;
+    // for( std::vector<uint8_t>::const_reverse_iterator it = bmp.data.rbegin()+198272; it != bmp.data.rbegin()+174323; it++ ) {
+    //     //printf( "%d ", *it );
+    //     this->data.push_back(*it);
+    // }
+    // std::cout << "end" << std::endl;
+    long size = bmp_info_header.width * bmp_info_header.bit_count / 8;
+    
+    std::ifstream inp{ fname, std::ios_base::binary };
+    data.resize(3*size);
+    
+    inp.seekg( -size, std::ios::end );
+    inp.read((char*)data.data() + 2*size, data.size());
+
+    // std::cout << "endzzzz" << std::endl;
+}
+/*
+bool BMP::region(const unsigned int& x, const unsigned int& y, const unsigned int& width, const unsigned int& height, bitmap_image& dest_image) const {
+    if ((x + width ) > width_ ) { return false; }
+    if ((y + height) > height_) { return false; }
+    
+    if (
+       (dest_image.width_  < width_ ) ||
+       (dest_image.height_ < height_)
+     ) {
+     dest_image.setwidth_height(width,height);
+    }
+
+    for (unsigned int r = 0; r < height; ++r) {
+        unsigned char* itr1     = row(r + y) + x * bytes_per_pixel_;
+        unsigned char* itr1_end = itr1 + (width * bytes_per_pixel_);
+        unsigned char* itr2     = dest_image.row(r);
+
+        std::copy(itr1, itr1_end, itr2);
+    }
+
+    return true;
+}*/
 
 void BMP::read(const char *fname) {
     std::ifstream inp{ fname, std::ios_base::binary };
@@ -175,31 +221,6 @@ void BMP::flatten() {
     std::replace_if(data.begin(), data.end(),
                     bind2nd(std::greater<int>(),240), 255);
 }
-/*
-void BMP::draw_line(int x0, int y0, int x1, int y1) {
-    int dx, dy, p, x, y;
-
-    dx = x1-x0;
-    dy = y1-y0;
-
-    x = x0;
-    y = y0;
-
-    p = 2*dy-dx;
-
-    while(x<x1) {
-        if (p>=0) {
-            this->set_pixel(x,y,0,0,255);
-            y=y+1;
-            p=p+2*dy-2*dx;
-        } else {
-            this->set_pixel(x,y,0,0,255);
-            p=p+2*dy;           
-        }
-        x=x+1;
-    }
-}
-*/
 
 void BMP::draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB)
 {
@@ -463,7 +484,6 @@ void BMP::findSectors(std::vector<Sector>& sectors) {
         }
     }
 }
-
 
 
 

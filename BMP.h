@@ -10,6 +10,13 @@
 #include <cmath>
 #include <string> 
 
+// for memcpy
+#include <cstdint>
+#include <cstring>
+
+// for reverse iterator
+#include <iterator>
+
 #pragma pack(push, 1)
 struct BMPFileHeader {
     uint16_t file_type{ 0x4D42 };          // File type always BM which is 0x4D42 (stored as hex uint16_t in little endian)
@@ -44,19 +51,6 @@ struct BMPColorHeader {
     uint32_t unused[16]{ 0 };                // Unused data for sRGB color space
 };
 #pragma pack(pop)
-
-// class Pair {
-// public: 
-//     Pair(int _first, int _second) : first(_first), second(_second) {}
-//     friend std::ostream& operator<<(std::ostream &out, const Pair &p) {
-//         std::cout << p.first << "," << p.second;
-//         return out;
-//     }
-// private:
-//     int first, second, third, fourth; // x0,y0,x1,y1
-// };
-// struct Sectors : public std::vector<Pair> {};
-// typedef std::vector<Pair>::iterator SectorsIterator;
 
 class Pixel {
 public:
@@ -96,6 +90,7 @@ struct BMP {
     
     BMP(const char *fname);
     BMP(int32_t width, int32_t height, bool has_alpha);
+    BMP(const char* fname, int32_t width, int32_t height, int32_t start, int32_t end);
     void read(const char *fname);
     void write(const char *fname);
     void set_pixel(int row, int col, uint32_t r, uint32_t g, uint32_t b);
@@ -169,28 +164,3 @@ private:
         }
     }
 };
-
-
-/*
-    struct Pixel {
-        uint8_t r,g,b,a;
-
-        Pixel() {}
-        Pixel(uint8_t B, uint8_t G, uint8_t R) 
-        {
-            this->r = R;
-            this->g = G;
-            this->b = B;
-        }
-        friend std::ostream& operator<<(std::ostream &out, const Pixel &p)
-        {
-            //out << p.R << "," << p.G << "," << p.B << "|";
-            //std::cout << "R:0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(p.R) << " ";
-            //std::cout << "G:0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(p.G) << " ";
-            //std::cout << "B:0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(p.B) << std::endl;
-            std::cout << (int)p.r << "," << (int)p.g << "," << (int)p.b << std::endl;
-            return out;
-        }
-    };
-
-*/
