@@ -60,6 +60,7 @@ BMP::BMP(const char* fname, int32_t width, int32_t height, int32_t start, int32_
     //     this->data.push_back(*it);
     // }
     // std::cout << "end" << std::endl;
+
     long rowsize = bmp_info_header.width * bmp_info_header.bit_count / 8;
     
     std::ifstream inp{ fname, std::ios_base::binary };
