@@ -58,8 +58,8 @@ void test6(const char* filename, int from, int to, std::vector<Sector>& sectors)
 
 void test7(const char* filename) {
     //BMP bmp2(418, 14, 309326, 333272, bmp1);
-    
-    BMP bmp2(filename, 600, 3, 0,0);
+    BMP bmp1(filename);
+    BMP bmp2(bmp1, 600, 500, 0, 0);
     bmp2.write("dupa2.bmp");
 }
 
@@ -76,7 +76,9 @@ int main() {
 	
 	//test6("test1.bmp", 0, 900, sectors);
 	//test7("test1_crop_before.bmp");
-	test7("dupa1.bmp");
+	
+	//test7("dupa1.bmp");
+	test7("test1.bmp");
 
     
 	return 0;

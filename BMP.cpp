@@ -10,7 +10,6 @@ BMP::BMP(const char *fname) {
 }
 
 BMP::BMP(int32_t width, int32_t height, bool has_alpha = true) {
-    std::cout << "dupa" << std::endl;
     if (width <= 0 || height <= 0) {
         throw std::runtime_error("The image width and height must be positive numbers.");
     }
@@ -41,7 +40,7 @@ BMP::BMP(int32_t width, int32_t height, bool has_alpha = true) {
 }
 
 class WartoscParzysta {
-    int i = 2;
+    int i = 1;
 public:
     bool operator() (int value) {
         return i++ % 3 ? false : true;
@@ -52,26 +51,71 @@ public:
 198272−174323 = 23949
 417 * 14 * 24 / 8 = 17514
 */
-BMP::BMP(const char* fname, int32_t width, int32_t height, int32_t start, int32_t end) : BMP(width, height, false) {
-    // this->data.resize(0);
-    // std::cout << "start" << std::endl;
-    // for( std::vector<uint8_t>::const_reverse_iterator it = bmp.data.rbegin()+198272; it != bmp.data.rbegin()+174323; it++ ) {
-    //     //printf( "%d ", *it );
-    //     this->data.push_back(*it);
-    // }
-    // std::cout << "end" << std::endl;
+BMP::BMP(BMP& bmp, int32_t width, int32_t height, int start_x, int start_y) : BMP(width, height, false) {
+    long rowsize = bmp_info_header.width * bmp_info_header.bit_count / 8;
 
+    std::cout << "[" << start_x << "," << 0 << "]" << " = " << bmp.get_pos(start_x, 0) << std::endl;
+    std::cout << "[" << start_x << "," << 1 << "]" << " = " << bmp.get_pos(start_x, 1) << std::endl;
+    std::cout << "[" << start_x << "," << 2 << "]" << " = " << bmp.get_pos(start_x, 2) << std::endl;
+
+    //data.resize(height*rowsize);
+    std::replace_if(data.begin(), data.end(), WartoscParzysta(), 255);
+
+    for(int i=0;i<height;i++) {
+        //std::copy(bmp.data.begin(), bmp.data.begin()+rowsize, (char*)data.data());
+        int start = bmp.get_pos(start_x, start_y+i);
+        int end = bmp.get_pos(start_x+width, start_y+i);
+        std::cout << start << std::endl;
+        std::cout << end << std::endl;
+        std::copy(bmp.data.begin()+start, bmp.data.begin()+end, (char*)data.data()+rowsize*i);
+    }
+
+
+    /*
     long rowsize = bmp_info_header.width * bmp_info_header.bit_count / 8;
     
     std::ifstream inp{ fname, std::ios_base::binary };
     data.resize(3*rowsize);
+
+    inp.seekg( -2*rowsize, std::ios::end );
+    inp.read((char*)data.data(), data.size());
     
     inp.seekg( -rowsize, std::ios::end );
-    inp.read((char*)data.data(), data.size());
+    inp.read((char*)data.data() + rowsize, data.size());
 
-    std::replace_if(data.begin() + rowsize, data.end(), WartoscParzysta(), 255);
+    std::replace_if(data.begin() + 2*rowsize, data.end(), WartoscParzysta(), 255);
+    */
+    // int loc;
+    // loc = get_pos(start_x, start_y);
+    // std::cout << "[" << start_x << "," << start_y << "]" << " = " << loc << std::endl;
+    // loc = get_pos(100, 2);
+    // std::cout << "[" << 100 << "," << 2 << "]" << " = " << loc << std::endl;
 
-    // std::cout << "endzzzz" << std::endl;
+    /////////////////////////////////////////////////////////////
+    //bmp_info_header.width = width;
+    //bmp_info_header.height = height;
+    /*
+    std::ifstream inp{ fname, std::ios_base::binary };
+    std::vector<uint8_t> tmp_data;
+    tmp_data.resize(width * height * bmp_info_header.bit_count / 8);
+    std::replace_if(tmp_data.begin(), tmp_data.end(), WartoscParzysta(), 255);
+    long rowsize = width * bmp_info_header.bit_count / 8;
+    int loc = get_pos(start_x, start_y);
+    inp.seekg(loc, inp.beg);
+    //for(int i=start_y+height;i>start_y;i--) {
+        //inp.read((char*)data.data() + i*rowsize, rowsize);
+        //inp.ignore(width*bmp_info_header.bit_count/8);
+        std::cout << "[" << start_x << "," << start_y << "]" << " = " << get_pos(start_x, start_y) << std::endl;
+        std::cout << "[" << start_x << "," << 1 << "]" << " = " << get_pos(start_x, 1) << std::endl;
+        std::cout << "[" << start_x << "," << 2 << "]" << " = " << get_pos(start_x, 2) << std::endl;
+
+    //}
+    bmp_info_header.width = width;
+    bmp_info_header.height = height;
+    */
+    //long size = 5402;
+    //std::cout << size - file_header.offset_data - (100 + 0*bmp_info_header.width)*bmp_info_header.bit_count/8 << std::endl;
+
 }
 /*
 bool BMP::region(const unsigned int& x, const unsigned int& y, const unsigned int& width, const unsigned int& height, bitmap_image& dest_image) const {
