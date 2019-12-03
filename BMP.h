@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string> 
+#include <map> 
 
 // for memcpy
 #include <cstdint>
@@ -80,6 +81,17 @@ public:
     // }
 //private:
     int left,right,top,bottom;
+    std::string text;
+
+    void setText(std::string text) {
+        this->text = text;
+    }
+    std::string getText() {
+        return this->text;
+    }
+    // bool containsParagraph() {
+        
+    // }
 };
 
 struct BMP {
@@ -98,6 +110,8 @@ struct BMP {
     void draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB);
     int get_pos(int row, int col);
     void flatten();
+    void histogram();
+    void grayscale();
     bool is_crossing(int x0, int y0, int x1, int y1);
     bool is_pixel_white(int row, int col);
     void colorX(int,int);
@@ -156,17 +170,18 @@ private:
     void validate_pixel(int row, int col) {
         //std::cout << __func__ << std::endl;
         //std::cout << "validate_pixel:" << std::to_string(row) + "," + std::to_string(col) + "]" << std::endl;
+        std::string coords = "[" + std::to_string(row) + "," + std::to_string(col) + "]";
         if (row < 0) {
-            throw std::runtime_error("Wrong coordinates, the x coord is too small: [" + std::to_string(row) + "," + std::to_string(col) + "]");
+            throw std::runtime_error("Wrong coordinates, the x coord is too small:" + coords);
         }
         if (row > bmp_info_header.width) {
-            throw std::runtime_error("Wrong coordinates, the x coord is too large: [" + std::to_string(row) + "," + std::to_string(col) + "]");            
+            throw std::runtime_error("Wrong coordinates, the x coord is too large:" + coords);            
         }
         if (col < 0) {
-            throw std::runtime_error("Wrong coordinates, the y coord is too small: [" + std::to_string(row) + "," + std::to_string(col) + "]");
+            throw std::runtime_error("Wrong coordinates, the y coord is too small:" + coords);
         }
         if (col > bmp_info_header.height) {
-            throw std::runtime_error("Wrong coordinates, the y coord is too large: [" + std::to_string(row) + "," + std::to_string(col) + "]");
+            throw std::runtime_error("Wrong coordinates, the y coord is too large:" + coords);
         }
     }
 };

@@ -53,24 +53,22 @@ public:
 */
 BMP::BMP(BMP& bmp, int32_t width, int32_t height, int start_x, int start_y) : BMP(width, height, false) {
     long rowsize = bmp_info_header.width * bmp_info_header.bit_count / 8;
-
-    std::cout << "[" << start_x << "," << 0 << "]" << " = " << bmp.get_pos(start_x, 0) << std::endl;
-    std::cout << "[" << start_x << "," << 1 << "]" << " = " << bmp.get_pos(start_x, 1) << std::endl;
-    std::cout << "[" << start_x << "," << 2 << "]" << " = " << bmp.get_pos(start_x, 2) << std::endl;
-
-    //data.resize(height*rowsize);
-    std::replace_if(data.begin(), data.end(), WartoscParzysta(), 255);
-
+    
+    // std::cout << "[" << start_x << "," << 0 << "]" << " = " << bmp.get_pos(start_x, 0) << std::endl;
+    // std::cout << "[" << start_x << "," << 1 << "]" << " = " << bmp.get_pos(start_x, 1) << std::endl;
+    // std::cout << "[" << start_x << "," << 2 << "]" << " = " << bmp.get_pos(start_x, 2) << std::endl;
+    
+    //std::replace_if(data.begin(), data.end(), WartoscParzysta(), 255);
+    
     for(int i=0;i<height;i++) {
         //std::copy(bmp.data.begin(), bmp.data.begin()+rowsize, (char*)data.data());
-        int start = bmp.get_pos(start_x, start_y+i);
-        int end = bmp.get_pos(start_x+width, start_y+i);
-        std::cout << start << std::endl;
-        std::cout << end << std::endl;
+        int start = bmp.get_pos(start_x, start_y+height-i);
+        int end = bmp.get_pos(start_x+width, start_y+height-i);
+        //std::cout << start << " : " << end << std::endl;
         std::copy(bmp.data.begin()+start, bmp.data.begin()+end, (char*)data.data()+rowsize*i);
     }
-
-
+    
+    
     /*
     long rowsize = bmp_info_header.width * bmp_info_header.bit_count / 8;
     
@@ -117,28 +115,19 @@ BMP::BMP(BMP& bmp, int32_t width, int32_t height, int start_x, int start_y) : BM
     //std::cout << size - file_header.offset_data - (100 + 0*bmp_info_header.width)*bmp_info_header.bit_count/8 << std::endl;
 
 }
-/*
-bool BMP::region(const unsigned int& x, const unsigned int& y, const unsigned int& width, const unsigned int& height, bitmap_image& dest_image) const {
-    if ((x + width ) > width_ ) { return false; }
-    if ((y + height) > height_) { return false; }
-    
-    if (
-       (dest_image.width_  < width_ ) ||
-       (dest_image.height_ < height_)
-     ) {
-     dest_image.setwidth_height(width,height);
+
+//  L  =  0.2126 × R   +   0.7152 × G   +   0.0722 × B 
+void BMP::grayscale() {
+    for(int i=0; i<data.size(); i+=3) {
+        uint8_t r = data.data()[i];
+        uint8_t g = data.data()[i+1];
+        uint8_t b = data.data()[i+2];
+        uint8_t l = 0.2126 * r   +   0.7152 * g   +   0.0722 * b;
+        data.data()[i] = l;
+        data.data()[i+1] = l;
+        data.data()[i+2] = l;
     }
-
-    for (unsigned int r = 0; r < height; ++r) {
-        unsigned char* itr1     = row(r + y) + x * bytes_per_pixel_;
-        unsigned char* itr1_end = itr1 + (width * bytes_per_pixel_);
-        unsigned char* itr2     = dest_image.row(r);
-
-        std::copy(itr1, itr1_end, itr2);
-    }
-
-    return true;
-}*/
+}
 
 void BMP::read(const char *fname) {
     std::ifstream inp{ fname, std::ios_base::binary };
@@ -273,185 +262,40 @@ bool BMP::is_pixel_white(int row, int col) {
 }
 
 void BMP::flatten() {
+    int threshold = 120;
     std::replace_if(data.begin(), data.end(),
-                    bind2nd(std::greater<int>(),240), 255);
+                    bind2nd(std::greater<int>(),threshold), 255);
+    std::replace_if(data.begin(), data.end(),
+                    bind2nd(std::less<int>(),threshold), 0);
 }
 
-void BMP::draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB)
-{
-    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
-    dx = x2 - x1;
-    dy = y2 - y1;
-    dx1 = fabs(dx);
-    dy1 = fabs(dy);
-    px = 2 * dy1 - dx1;
-    py = 2 * dx1 - dy1;
-    if (dy1 <= dx1) {
-        if (dx >= 0) {
-            x = x1;
-            y = y1;
-            xe = x2;
+void BMP::histogram() {
+
+    std::map<std::string, int> histogram;
+    for (int i=0; i<data.size(); i+=3) {
+
+        std::ostringstream out; 
+        out << std::hex << std::setw(2) << std::setfill('0') << (int) data[i];
+        out << std::hex << std::setw(2) << std::setfill('0') << (int) data[i+1];
+        out << std::hex << std::setw(2) << std::setfill('0') << (int) data[i+2];
+        std::string color = out.str();
+        //std::cout << color << std::endl;
+        
+        auto it = histogram.find(color);
+        if(it != histogram.end()) {
+            //alert user key exists
+            histogram[color]++;
         }
         else {
-            x = x2;
-            y = y2;
-            xe = x1;
-        }
-        this->set_pixel(x, y, colR, colG, colB);
-        for (i = 0; x < xe; i++) {
-            x = x + 1;
-            if (px < 0) {
-                px = px + 2 * dy1;
-            }
-            else {
-                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
-                    y = y + 1;
-                }
-                else {
-                    y = y - 1;
-                }
-                px = px + 2 * (dy1 - dx1);
-            }
-            this->set_pixel(x, y, colR, colG, colB);
+            //key doesn't exist
+            histogram.insert({color, 1});
         }
     }
-    else {
-        if (dy >= 0) {
-            x = x1;
-            y = y1;
-            ye = y2;
-        }
-        else {
-            x = x2;
-            y = y2;
-            ye = y1;
-        }
-        this->set_pixel(x, y, colR, colG, colB);
-        for (i = 0; y < ye; i++) {
-            y = y + 1;
-            if (py <= 0) {
-                py = py + 2 * dx1;
-            }
-            else {
-                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
-                    x = x + 1;
-                }
-                else {
-                    x = x - 1;
-                }
-                py = py + 2 * (dx1 - dy1);
-            }
-            this->set_pixel(x, y, colR, colG, colB);
-        }
+
+    for (auto itr = histogram.begin(); itr != histogram.end(); ++itr) { 
+        std::cout << itr->first 
+             << '\t' << itr->second << '\n'; 
     }
-}
-
-/*
-bool BMP::is_crossing(int x0, int y0, int x1, int y1) {
-    int dx, dy, p, x, y;
-
-    dx = x1-x0;
-    dy = y1-y0;
-
-    x = x0;
-    y = y0;
-
-    p = 2*dy-dx;
-
-    while(x<x1) {
-        if (p>=0) {
-            if (this->is_pixel_white(x,y) != true) {
-                return true;
-            }
-            y=y+1;
-            p=p+2*dy-2*dx;
-        } else {
-            if (this->is_pixel_white(x,y) != true) {
-                return true;
-            }
-            p=p+2*dy;           
-        }
-        x=x+1;
-    }
-    return false;
-}*/
-
-bool BMP::is_crossing(int x1, int y1, int x2, int y2)
-{
-    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
-    dx = x2 - x1;
-    dy = y2 - y1;
-    dx1 = fabs(dx);
-    dy1 = fabs(dy);
-    px = 2 * dy1 - dx1;
-    py = 2 * dx1 - dy1;
-    if (dy1 <= dx1) {
-        if (dx >= 0) {
-            x = x1;
-            y = y1;
-            xe = x2;
-        }
-        else {
-            x = x2;
-            y = y2;
-            xe = x1;
-        }
-        if (this->is_pixel_white(x, y) != true) {
-            return true;
-        }
-        for (i = 0; x < xe; i++) {
-            x = x + 1;
-            if (px < 0) {
-                px = px + 2 * dy1;
-            }
-            else {
-                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
-                    y = y + 1;
-                }
-                else {
-                    y = y - 1;
-                }
-                px = px + 2 * (dy1 - dx1);
-            }
-            if (this->is_pixel_white(x, y) != true) {
-                return true;
-            }
-        }
-    }
-    else {
-        if (dy >= 0) {
-            x = x1;
-            y = y1;
-            ye = y2;
-        }
-        else {
-            x = x2;
-            y = y2;
-            ye = y1;
-        }
-        if (this->is_pixel_white(x, y) != true) {
-            return true;
-        }
-        for (i = 0; y < ye; i++) {
-            y = y + 1;
-            if (py <= 0) {
-                py = py + 2 * dx1;
-            }
-            else {
-                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
-                    x = x + 1;
-                }
-                else {
-                    x = x - 1;
-                }
-                py = py + 2 * (dx1 - dy1);
-            }
-            if (this->is_pixel_white(x, y) != true) {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 void BMP::colorY(int yStart, int yEnd) {
@@ -473,12 +317,6 @@ void BMP::colorX(int xStart, int xEnd) {
 }
 
 int BMP::colorXxxxxLeft(int yStart, int yEnd) {
-    // int width = bmp_info_header.width;
-    // for(int i=yStart; i<yEnd; i++) {
-    //     if(this->is_crossing(0,i,width-1,i) != true) {
-    //         this->draw_line(0,i,width-1,i,255,255,0);
-    //     }
-    // }
     int width = bmp_info_header.width;
     int tmp;
     for(int i=yStart; i<yEnd; i++) {
@@ -540,89 +378,147 @@ void BMP::findSectors(std::vector<Sector>& sectors) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// void BMP::findSectorsX(int xStart, int xEnd, std::vector<Sector>& sectors) {
-//     int tmp;
-//     for(int i=xStart; i<xEnd; i++) {
-//         Pixel p1 = get_pixel(0, i);
-//         Pixel p2 = get_pixel(0, i+1);
-//         if (p1.isBlack() && p2.isWhite()) {
-//             tmp = i;
-//         }
-//         if (p1.isWhite() && p2.isBlack()) {
-//             sectors.push_back(Sector(0, 0, tmp, i)); 
-//         }
-//     }
-// }
-
-
-
-
-
-
-
-
-
-
-/*
-bool BMP::IsSectorStartY(int index) {
-    return (this->is_pixel_white(0,index) == false && this->is_pixel_white(0,index+1) == true);
-}
-bool BMP::IsSectorEndY(int index) {
-    return (this->is_pixel_white(0,index) == true && this->is_pixel_white(0,index+1) == false);
-}
-bool BMP::IsSectorStartX(int index) {
-    return (this->is_pixel_white(index,0) == false && this->is_pixel_white(index+1,0) == true);
-}
-bool BMP::IsSectorEndX(int index) {
-    return (this->is_pixel_white(index,0) == true && this->is_pixel_white(index+1,0) == false);
-}
-
-Sectors* BMP::discover_sectors_y() {
-    Sectors* sectors_ptr = new Sectors();
-    int height = bmp_info_header.height;
-    int sec_start = is_pixel_white(0,0);
-    for(int i=1; i<height-1; i++) {
-        if (IsSectorStartY(i)) {
-            sec_start = i;
-        } else if (IsSectorEndY(i)) {
-            Pair pair(sec_start,i);
-            sectors_ptr->push_back(pair);
+void BMP::draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB) {
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    dx = x2 - x1;
+    dy = y2 - y1;
+    dx1 = fabs(dx);
+    dy1 = fabs(dy);
+    px = 2 * dy1 - dx1;
+    py = 2 * dx1 - dy1;
+    if (dy1 <= dx1) {
+        if (dx >= 0) {
+            x = x1;
+            y = y1;
+            xe = x2;
+        }
+        else {
+            x = x2;
+            y = y2;
+            xe = x1;
+        }
+        this->set_pixel(x, y, colR, colG, colB);
+        for (i = 0; x < xe; i++) {
+            x = x + 1;
+            if (px < 0) {
+                px = px + 2 * dy1;
+            }
+            else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    y = y + 1;
+                }
+                else {
+                    y = y - 1;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
+            this->set_pixel(x, y, colR, colG, colB);
         }
     }
-    return sectors_ptr;
-}
-
-Sectors* BMP::discover_sectors_x() {
-    Sectors* sectors_ptr = new Sectors();
-    int height = bmp_info_header.height;
-    int sec_start = is_pixel_white(0,0);
-    for(int i=1; i<height-1; i++) {
-        if (IsSectorStartX(i)) {
-            sec_start = i;
-        } else if (IsSectorEndX(i)) {
-            Pair pair(sec_start,i);
-            sectors_ptr->push_back(pair);
+    else {
+        if (dy >= 0) {
+            x = x1;
+            y = y1;
+            ye = y2;
+        }
+        else {
+            x = x2;
+            y = y2;
+            ye = y1;
+        }
+        this->set_pixel(x, y, colR, colG, colB);
+        for (i = 0; y < ye; i++) {
+            y = y + 1;
+            if (py <= 0) {
+                py = py + 2 * dx1;
+            }
+            else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    x = x + 1;
+                }
+                else {
+                    x = x - 1;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            this->set_pixel(x, y, colR, colG, colB);
         }
     }
-    return sectors_ptr;
 }
-*/
+
+bool BMP::is_crossing(int x1, int y1, int x2, int y2) {
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    dx = x2 - x1;
+    dy = y2 - y1;
+    dx1 = fabs(dx);
+    dy1 = fabs(dy);
+    px = 2 * dy1 - dx1;
+    py = 2 * dx1 - dy1;
+    if (dy1 <= dx1) {
+        if (dx >= 0) {
+            x = x1;
+            y = y1;
+            xe = x2;
+        }
+        else {
+            x = x2;
+            y = y2;
+            xe = x1;
+        }
+        if (this->is_pixel_white(x, y) != true) {
+            return true;
+        }
+        for (i = 0; x < xe; i++) {
+            x = x + 1;
+            if (px < 0) {
+                px = px + 2 * dy1;
+            }
+            else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    y = y + 1;
+                }
+                else {
+                    y = y - 1;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
+            if (this->is_pixel_white(x, y) != true) {
+                return true;
+            }
+        }
+    }
+    else {
+        if (dy >= 0) {
+            x = x1;
+            y = y1;
+            ye = y2;
+        }
+        else {
+            x = x2;
+            y = y2;
+            ye = y1;
+        }
+        if (this->is_pixel_white(x, y) != true) {
+            return true;
+        }
+        for (i = 0; y < ye; i++) {
+            y = y + 1;
+            if (py <= 0) {
+                py = py + 2 * dx1;
+            }
+            else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    x = x + 1;
+                }
+                else {
+                    x = x - 1;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            if (this->is_pixel_white(x, y) != true) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
