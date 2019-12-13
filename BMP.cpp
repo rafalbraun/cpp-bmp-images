@@ -261,16 +261,14 @@ bool BMP::is_pixel_white(int row, int col) {
     return (r == 255 && g == 255 && b == 255) ? true : false;
 }
 
-void BMP::flatten() {
-    int threshold = 120;
+void BMP::flatten(int threshold) {
     std::replace_if(data.begin(), data.end(),
                     bind2nd(std::greater<int>(),threshold), 255);
     std::replace_if(data.begin(), data.end(),
-                    bind2nd(std::less<int>(),threshold), 0);
+                    bind2nd(std::less<int>(),100), 0);
 }
 
 void BMP::histogram() {
-
     std::map<std::string, int> histogram;
     for (int i=0; i<data.size(); i+=3) {
 

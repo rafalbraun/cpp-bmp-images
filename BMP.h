@@ -109,7 +109,7 @@ struct BMP {
     Pixel get_pixel(int row, int col);
     void draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB);
     int get_pos(int row, int col);
-    void flatten();
+    void flatten(int threshold);
     void histogram();
     void grayscale();
     bool is_crossing(int x0, int y0, int x1, int y1);
