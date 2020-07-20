@@ -5,6 +5,7 @@
 //
 
 BMP::BMP(const char *fname) {
+    filename = fname;
     read(fname);
     //std::cout << bmp_info_header.bit_count << std::endl;
 }
@@ -47,73 +48,50 @@ public:
     }
 };
 
-/*
-198272−174323 = 23949
-417 * 14 * 24 / 8 = 17514
-*/
 BMP::BMP(BMP& bmp, int32_t width, int32_t height, int start_x, int start_y) : BMP(width, height, false) {
     long rowsize = bmp_info_header.width * bmp_info_header.bit_count / 8;
-    
-    // std::cout << "[" << start_x << "," << 0 << "]" << " = " << bmp.get_pos(start_x, 0) << std::endl;
-    // std::cout << "[" << start_x << "," << 1 << "]" << " = " << bmp.get_pos(start_x, 1) << std::endl;
-    // std::cout << "[" << start_x << "," << 2 << "]" << " = " << bmp.get_pos(start_x, 2) << std::endl;
-    
-    //std::replace_if(data.begin(), data.end(), WartoscParzysta(), 255);
-    
+
     for(int i=0;i<height;i++) {
-        //std::copy(bmp.data.begin(), bmp.data.begin()+rowsize, (char*)data.data());
         int start = bmp.get_pos(start_x, start_y+height-i);
         int end = bmp.get_pos(start_x+width, start_y+height-i);
-        //std::cout << start << " : " << end << std::endl;
         std::copy(bmp.data.begin()+start, bmp.data.begin()+end, (char*)data.data()+rowsize*i);
     }
+}
+
+void BMP::readParagraphs() {
+
+}
+
+/*
+18398556
+13798917
+*/
+void BMP::removeAlpha() {
+    if (bmp_info_header.bit_count == 24) {
+        std::cout << "[INFO] Alpha canal already removed: " << filename << std::endl;
+        return;
+    } else {
+        std::vector<uint8_t> _data;
+        for(int i=0; i<data.size(); i+=4) {
+            _data.push_back(data.data()[i]);
+            _data.push_back(data.data()[i+1]);
+            _data.push_back(data.data()[i+2]);
+        }
+        //std::cout << data.size() << std::endl;
+        //std::cout << _data.size() << std::endl;
+        data.clear();
+        data =_data;
+
+        bmp_info_header.bit_count = 24;
+        bmp_info_header.compression = 0;
+        row_stride = bmp_info_header.width * 3;
+        data.resize(row_stride * bmp_info_header.height);
+
+        uint32_t new_stride = make_stride_aligned(4);
+        file_header.file_size = file_header.offset_data + data.size() + bmp_info_header.height * (new_stride - row_stride);
     
-    
-    /*
-    long rowsize = bmp_info_header.width * bmp_info_header.bit_count / 8;
-    
-    std::ifstream inp{ fname, std::ios_base::binary };
-    data.resize(3*rowsize);
-
-    inp.seekg( -2*rowsize, std::ios::end );
-    inp.read((char*)data.data(), data.size());
-    
-    inp.seekg( -rowsize, std::ios::end );
-    inp.read((char*)data.data() + rowsize, data.size());
-
-    std::replace_if(data.begin() + 2*rowsize, data.end(), WartoscParzysta(), 255);
-    */
-    // int loc;
-    // loc = get_pos(start_x, start_y);
-    // std::cout << "[" << start_x << "," << start_y << "]" << " = " << loc << std::endl;
-    // loc = get_pos(100, 2);
-    // std::cout << "[" << 100 << "," << 2 << "]" << " = " << loc << std::endl;
-
-    /////////////////////////////////////////////////////////////
-    //bmp_info_header.width = width;
-    //bmp_info_header.height = height;
-    /*
-    std::ifstream inp{ fname, std::ios_base::binary };
-    std::vector<uint8_t> tmp_data;
-    tmp_data.resize(width * height * bmp_info_header.bit_count / 8);
-    std::replace_if(tmp_data.begin(), tmp_data.end(), WartoscParzysta(), 255);
-    long rowsize = width * bmp_info_header.bit_count / 8;
-    int loc = get_pos(start_x, start_y);
-    inp.seekg(loc, inp.beg);
-    //for(int i=start_y+height;i>start_y;i--) {
-        //inp.read((char*)data.data() + i*rowsize, rowsize);
-        //inp.ignore(width*bmp_info_header.bit_count/8);
-        std::cout << "[" << start_x << "," << start_y << "]" << " = " << get_pos(start_x, start_y) << std::endl;
-        std::cout << "[" << start_x << "," << 1 << "]" << " = " << get_pos(start_x, 1) << std::endl;
-        std::cout << "[" << start_x << "," << 2 << "]" << " = " << get_pos(start_x, 2) << std::endl;
-
-    //}
-    bmp_info_header.width = width;
-    bmp_info_header.height = height;
-    */
-    //long size = 5402;
-    //std::cout << size - file_header.offset_data - (100 + 0*bmp_info_header.width)*bmp_info_header.bit_count/8 << std::endl;
-
+        std::cout << "[INFO] Removed alpha canal from " << filename << std::endl;
+    }
 }
 
 //  L  =  0.2126 × R   +   0.7152 × G   +   0.0722 × B 
@@ -127,6 +105,7 @@ void BMP::grayscale() {
         data.data()[i+1] = l;
         data.data()[i+2] = l;
     }
+    std::cout << "[INFO] Converted " << filename << " into grayscale " << std::endl;
 }
 
 void BMP::read(const char *fname) {
@@ -218,6 +197,7 @@ void BMP::write(const char *fname) {
             }
         }
     }
+    std::cout << "[INFO] written into " << fname << std::endl;
 }
 
 void BMP::set_pixel(int row, int col, uint32_t r, uint32_t g, uint32_t b) {
@@ -261,17 +241,104 @@ bool BMP::is_pixel_white(int row, int col) {
     return (r == 255 && g == 255 && b == 255) ? true : false;
 }
 
+/*
+    usuń przerwy o wysokości jednego pixela
+*/
+void BMP::removeArtifacts(bool (*func)(Pixel p)) {
+    Pixel pixel_1, pixel_2, pixel_3;
+    for(int i=0; i<bmp_info_header.height-3; i++) {
+        pixel_1 = get_pixel(0, i);
+        pixel_2 = get_pixel(0, i+1);
+        pixel_3 = get_pixel(0, i+2);
+        //std::cout << i << " " << pixel << " isWhite?: " << func(pixel) << std::endl;
+        if (func(pixel_1) == false && func(pixel_2) == true && func(pixel_3) == false) {
+            draw_line(0,i+1,bmp_info_header.width-1,i+1,0,0,255);
+        }
+    }
+}
+
+void BMP::findThreshold(int threshold) {
+    int index, max = 0;
+    for(int color=0; color<255; color++) {
+        int counter = 0;
+        BMP bmp(filename);
+        bmp.flatten(color);
+        for(int i=0; i<bmp_info_header.width-1; i++) {
+            if(get_pixel(i, 0).isWhite()) {
+                counter++;
+            }
+            if(get_pixel(i, bmp_info_header.height-1).isWhite()) {
+                counter++;
+            }
+        } 
+        for(int j=0; j<bmp_info_header.height-1; j++) {
+            if(get_pixel(0, j).isWhite()) {
+                counter++;
+            }
+            if(get_pixel(bmp_info_header.width-1, 0).isWhite()) {
+                counter++;
+            }
+        }
+        std::cout << color << ": " << counter << " / " << bmp_info_header.height * bmp_info_header.width << std::endl;
+        if(counter>max) {
+            max = counter;
+            index = color;
+        }
+    }
+    threshold = index;
+    std::cout << "------------" << std::endl;
+    std::cout << max << " / " << bmp_info_header.height * bmp_info_header.width << std::endl;
+    std::cout << threshold << std::endl;
+}
+
+void BMP::readParagraph(Sector s, Paragraph p) {
+    // crop image
+    // use tesseract to read (or sth else)
+    // return text with image and all in Paragraph struct
+}
+
+void BMP::saveSectorToFile(Sector s, const char* _filename) {
+    int w = (s.right - s.left);
+    int h = (s.bottom - s.top);
+    int start_x = s.left;
+    int start_y = s.top;
+    BMP bmp(*this, w, h, start_x, start_y);
+    bmp.write(_filename);
+}
+
+// call only after colorY()
+void BMP::countLines(std::vector<std::pair<int,int>> lines, bool (*func)(Pixel p)) {
+    Pixel pixel = get_pixel(0, 0);
+    int start = 0;
+    bool tmp = func(pixel), curr;
+    for(int i=1; i<bmp_info_header.height; i++) {
+        pixel = get_pixel(0, i);
+        //std::cout << i << " " << pixel << " isWhite?: " << func(pixel) << std::endl;
+        curr = func(pixel);
+        if (tmp == true && curr == false) {
+            start = i;
+        } else if (tmp == false && curr == true) {
+            lines.push_back(std::pair<int,int>(start, i));
+        }
+        tmp = curr;
+    }
+    for(auto line : lines) {
+        std::cout << line.first << " " << line.second << " " << line.second - line.first << std::endl;
+    }
+}
+
 void BMP::flatten(int threshold) {
     std::replace_if(data.begin(), data.end(),
-                    bind2nd(std::greater<int>(),threshold), 255);
+                    bind2nd(std::greater<int>(), threshold), 255);
     std::replace_if(data.begin(), data.end(),
-                    bind2nd(std::less<int>(),100), 0);
+                    bind2nd(std::less<int>(), threshold), 0);
+    std::cout << "[INFO] Flattened " << filename << std::endl;
 }
 
 void BMP::histogram() {
     std::map<std::string, int> histogram;
     for (int i=0; i<data.size(); i+=3) {
-
+        
         std::ostringstream out; 
         out << std::hex << std::setw(2) << std::setfill('0') << (int) data[i];
         out << std::hex << std::setw(2) << std::setfill('0') << (int) data[i+1];
@@ -299,17 +366,18 @@ void BMP::histogram() {
 void BMP::colorY(int yStart, int yEnd) {
     int width = bmp_info_header.width;
     for(int i=yStart; i<yEnd; i++) {
-        if(this->is_crossing(0,i,width-1,i) != true) {
+        if(this->is_crossing(0,i,width-1,i) <= thr) {
             this->draw_line(0,i,width-1,i,0,0,255);
         }
     }
+    std::cout << "[INFO] Applied ColorY to " << filename << std::endl;
 }
 
 void BMP::colorX(int xStart, int xEnd) {
     int height = bmp_info_header.height;
     for(int i=xStart; i<xEnd; i++) {
-        if(this->is_crossing(i,0,i,height) != true) {
-            this->draw_line(i,0,i,height,0,0,255);
+        if(this->is_crossing(i,0,i,height-1) <= thr) {
+            this->draw_line(i,0,i,height-1,0,0,255);
         }
     }
 }
@@ -319,7 +387,7 @@ int BMP::colorXxxxxLeft(int yStart, int yEnd) {
     int tmp;
     for(int i=yStart; i<yEnd; i++) {
         for(int j=0; j<width-1; j++) {
-            if(this->is_crossing(j,yStart,j,yEnd+1) != true) {  // do weryfikacji dlaczego +1
+            if(this->is_crossing(j,yStart,j,yEnd+1) == 0) {  // do weryfikacji dlaczego +1
                 this->draw_line(j,yStart,j,yEnd+1,0,0,255);     // do weryfikacji dlaczego +1
                 tmp = j;
             } else {
@@ -335,7 +403,7 @@ int BMP::colorXxxxxRight(int yStart, int yEnd) {
     int tmp;
     for(int i=yStart; i<yEnd-1; i++) {
         for(int j=width-1; j>0; j--) {
-            if(this->is_crossing(j,yStart,j,yEnd+1) != true) {
+            if(this->is_crossing(j,yStart,j,yEnd+1) == 0) {
                 this->draw_line(j,yStart,j,yEnd+1,0,0,255);
                 tmp = j;
             } else {
@@ -444,8 +512,9 @@ void BMP::draw_line(int x1, int y1, int x2, int y2, int colR, int colG, int colB
     }
 }
 
-bool BMP::is_crossing(int x1, int y1, int x2, int y2) {
+int BMP::is_crossing(int x1, int y1, int x2, int y2) {
     int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    int points_of_crossing = 0;
     dx = x2 - x1;
     dy = y2 - y1;
     dx1 = fabs(dx);
@@ -464,7 +533,7 @@ bool BMP::is_crossing(int x1, int y1, int x2, int y2) {
             xe = x1;
         }
         if (this->is_pixel_white(x, y) != true) {
-            return true;
+            points_of_crossing++;
         }
         for (i = 0; x < xe; i++) {
             x = x + 1;
@@ -481,7 +550,7 @@ bool BMP::is_crossing(int x1, int y1, int x2, int y2) {
                 px = px + 2 * (dy1 - dx1);
             }
             if (this->is_pixel_white(x, y) != true) {
-                return true;
+                points_of_crossing++;
             }
         }
     }
@@ -497,7 +566,7 @@ bool BMP::is_crossing(int x1, int y1, int x2, int y2) {
             ye = y1;
         }
         if (this->is_pixel_white(x, y) != true) {
-            return true;
+            points_of_crossing++;
         }
         for (i = 0; y < ye; i++) {
             y = y + 1;
@@ -514,9 +583,13 @@ bool BMP::is_crossing(int x1, int y1, int x2, int y2) {
                 py = py + 2 * (dx1 - dy1);
             }
             if (this->is_pixel_white(x, y) != true) {
-                return true;
+                points_of_crossing++;
             }
         }
     }
-    return false;
+    return points_of_crossing;
+}
+
+void BMP::fragment(const char* dirname) {
+    
 }

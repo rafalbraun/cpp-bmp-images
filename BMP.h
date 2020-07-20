@@ -64,11 +64,55 @@ public:
     uint32_t r, g, b;
     bool isBlack() { return r==0&&g==0&&b==255;}
     bool isWhite() { return r==255&&g==255&&b==255;}
+    bool isBlue () { return r==0&&g==0&&b==255;}
+    /*
+    std::string getColor() {
+        if (isBlack()) {
+            return "black";
+        } else if(isWhite()) {
+            return "white";
+        } else if(isBlue()) {
+            return "blue";
+        } else {
+            return "UNKNOWN";
+        }
+    }*/
+    bool static _isBlack(Pixel p) { return p.r==0&&p.g==0&&p.b==0;}
+    bool static _isWhite(Pixel p) { return p.r==255&&p.g==255&&p.b==255;}
+    bool static _isBlue(Pixel p) { return p.r==0&&p.g==0&&p.b==255;}
 
     friend std::ostream& operator<<(std::ostream &out, const Pixel &p) {
         std::cout << "(" << p.r << "," << p.g << "," << p.b << ")";
         return out;
     }
+};
+
+/**
+    Types:
+        - paragraph
+        - section
+        - quote
+        - //przypis//
+        - chapter title
+        - paragraph title
+        - section title
+        - source code
+        - other
+
+*/
+struct Paragraph {
+    // BMP bmp ???
+    int fontSize;
+    std::string fontType;
+    std::string textContent;
+
+    int width;
+    int height;
+    int positionX;
+    int positionY;
+
+    std::string language; // en-EN, pl-PL
+    std::string alphabet; // latin,polish
 };
 
 class Sector {
@@ -99,7 +143,10 @@ struct BMP {
     BMPInfoHeader bmp_info_header;
     BMPColorHeader bmp_color_header;
     std::vector<uint8_t> data;
-    
+
+    const char* filename;
+    int thr = 1;
+
     BMP(const char *fname);
     BMP(int32_t width, int32_t height, bool has_alpha);
     BMP(BMP& bmp, int32_t width, int32_t height, int32_t start, int32_t end);
@@ -112,10 +159,10 @@ struct BMP {
     void flatten(int threshold);
     void histogram();
     void grayscale();
-    bool is_crossing(int x0, int y0, int x1, int y1);
+    int is_crossing(int x0, int y0, int x1, int y1);
     bool is_pixel_white(int row, int col);
     void colorX(int,int);
-    void colorY(int,int);
+    void colorY(int yStart, int yEnd);
     // Sectors* discover_sectors_y();
     // Sectors* discover_sectors_x();
     // bool IsSectorStartX(int index);
@@ -128,6 +175,17 @@ struct BMP {
     int colorXxxxxLeft(int yStart, int yEnd);
     int colorXxxxxRight(int yStart, int yEnd);
 
+    void countLines(std::vector<std::pair<int,int>> lines, bool (*func)(Pixel p));
+    void removeArtifacts(bool (*func)(Pixel p));
+    void findThreshold(int threshold);
+    void readParagraph(Sector s, Paragraph p);
+
+    void saveSectorToFile(Sector s, const char* _filename);
+
+    void readParagraphs();
+    void removeAlpha();
+
+    int getHeight() { return bmp_info_header.height; }
 private:
     uint32_t row_stride{ 0 };
 
@@ -185,3 +243,4 @@ private:
         }
     }
 };
+

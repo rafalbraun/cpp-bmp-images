@@ -2,3 +2,5 @@
 *.o
 *.png
 a.out
+tmp/
+images/

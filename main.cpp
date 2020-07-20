@@ -1,99 +1,32 @@
 #include <iostream>
 #include <iterator>
 #include "BMP.h"
+//#include "tesseract.hpp"
 
+#include "helpers.cpp"
+#include "test.cpp"
+
+/*
 //
 // g++ BMP.cpp -c -o BMP.o && g++ -c main.cpp -o main.o && g++ main.o BMP.o
 //
 
-void test1() {
-	BMP bmp1("test1.bmp");
-	bmp1.colorX(0,600);
-	bmp1.write("zzz5.bmp");
-}
+pdfseparate -f 1 -l 1 sample.pdf sample-1.pdf
+pdfseparate sample.pdf sample-%d.pdf
 
-void test2() {
-	BMP bmp1("test1.bmp");
-	bmp1.colorY(0,900);
-	bmp1.write("zzz6.bmp");
-}
+pdfseparate "/home/vanqyard/Dokumenty/Ibn Ishaq - Sirat Rasul Allah.pdf" ./sample-%d.pdf
+pdfseparate "/home/vanqyard/Dokumenty/Świat powojenny i Polska.pdf" ./sample-%d.pdf
+pdfseparate "/home/vanqyard/Dokumenty/Wprowadzenie do algorytmow - Thomas Cormen.pdf" ./sample-%d.pdf
 
-void test3(std::vector<Sector>& sectors) {
-	BMP bmp1("test1.bmp");	
-	bmp1.colorY(0,900);
-	bmp1.flatten(240);
-	bmp1.findSectorsY(0,900,sectors);
-	bmp1.write("zzz4.bmp");
-}
+convert -density 150 sample-25.pdf output.bmp
+convert -density 150 sample[25].pdf output.bmp
 
-void test4(const char* filename) {
-	BMP bmp1(filename);
-	//bmp1.draw_line(0,490,600,490, 0,0,255);
-	bmp1.flatten(170);
-	bmp1.write("zzz.bmp");	
-}
+convert -density 150  sample-25.pdf output.png
+convert output.png -background white -flatten output.png 
 
-void test5() {
-	BMP bmp1("xdxd.bmp");
-	bmp1.colorXxxxxLeft(900,1500);
-	bmp1.write("zzz7.bmp");
-}
+*/
 
-void test6(const char* filename, int from, int to, std::vector<Sector>& sectors) {
-	BMP bmp1(filename);	
-	bmp1.colorY(from,to);
-	bmp1.flatten(170);
-	bmp1.findSectorsY(from,to,sectors);
-	bmp1.findSectors(sectors);
-	bmp1.write("zzz8.bmp");
 
-	int w, h, start_x, start_y, i=0;
-    for(auto it = sectors.begin(); it != sectors.end(); ++it, ++i) {
-        w = (it->right - it->left);
-		h = (it->bottom - it->top);
-		start_x = it->left;
-		start_y = it->top;
-        std::cout << "(" << w << "," << h << ")" << "[" << start_x << "," << start_y << "]" << std::endl;
-
-	    BMP bmp2(bmp1, w, h, start_x, start_y);
-	    std::string fname = "dupa_" + std::to_string(i) + ".bmp";
-	    bmp2.write(fname.c_str());
-    }
-}
-
-void test7(const char* filename) {
-    //BMP bmp2(418, 14, 309326, 333272, bmp1);
-    BMP bmp1(filename);
-    BMP bmp2(bmp1, 400, 200, 100, 100);
-    bmp2.write("dupa2.bmp");
-}
-
-void test8(const char* filename) {
-    BMP bmp1(filename);
-    bmp1.grayscale();
-    bmp1.write("www.bmp");	
-}
-
-void test9(const char* filename, int from, int to) {
-	BMP bmp1(filename);	
-	bmp1.colorY(from,to);
-	//bmp1.colorXxxxxLeft(from,to);
-	//bmp1.colorXxxxxRight(from,to);
-	bmp1.write("zzz8.bmp");
-}
-
-void test10(const char* filename, std::vector<Sector>& sectors) {
-	BMP bmp1(filename);	
-	bmp1.colorY(0,747);
-	bmp1.flatten(170);
-	bmp1.findSectorsY(0,747,sectors);
-	bmp1.findSectors(sectors);
-	bmp1.write("zzz8.bmp");
-	
-    for(auto it = sectors.begin(); it != sectors.end(); ++it) {
-        std::cout << "(" << it->left << "," << it->right << "," << it->top << "," << it->bottom << ")" << std::endl;
-    }
-}
 
 /**
  * 1 read file
@@ -104,8 +37,93 @@ void test10(const char* filename, std::vector<Sector>& sectors) {
  *
  * formats: chm, epub, pdf, djvu, aws3, cbz,
  */
-int main() {
-	std::vector<Sector> sectors;
+/*
+makefile cpp multiple main
+*/
+int main(int argc, char* argv[]) {
+	//pdfSeparate("./documents/rozmowa.pdf", "./tmp");
+	//int count = countFiles("./tmp");
+	//convertPdfToBmp("./images/filename-20.bmp", "./output.bmp");
+
+	//std::vector<Sector> sectors;
+	//const char* filename = (argc == 2) ? argv[1] : "decline.bmp";
+
+	BMP bmp("./images/aaa.bmp");
+	bmp.removeAlpha();
+	bmp.flatten(150);
+	bmp.colorY(0, bmp.bmp_info_header.height);
+	bmp.fragment("./tmp");
+	bmp.write("out.bmp");
+	return 0;
+
+
+	//convertPdfToBmp("./dir2/sample-10");
+
+	/*
+	BMP bmp("input.bmp");
+	bmp.removeAlpha();
+	bmp.flatten(150);
+	bmp.write("out.bmp");
+	*/
+
+	/*
+	const char* filename = "images/cccccc.bmp";
+	BMP bmp(filename);
+	bmp.grayscale();
+	bmp.write("images/out.bmp");
+	*/
+
+
+	//printInfo(bmp);
+
+	//std::cout << ocr(filename, "pol");
+
+
+	// bmp.findSectorsY(0, height, sectors);
+	// bmp.findSectors(sectors);
+	// printSectors(sectors);
+	
+	/*
+	for (int i=1; i<sectors.size(); i++) {
+		//const char* fname = ("tmp_" + std::to_string(i) + ".bmp").c_str();
+		//std::cout << fname << std::endl;
+		bmp.saveSectorToFile(sectors[i], "tmp.bmp");
+		std::cout << ocr("tmp.bmp", "pol");
+	}*/
+
+	//testSaveSectorToFile(sectors[3], "out.bmp", "tmp.bmp");
+
+	//test4(argv[1], 100);
+	//test10(argv[1], sectors);
+
+	//testThreshold(argv[1]);
+	//test2(argv[1]);
+
+	//const char* pagename = separatePage(argv[1], 0);
+	//testRemoveAlpha(argv[1]);
+
+	//test4(argv[1], 130);
+	//grayscaleTest(argv[1]);
+	//test1(argv[1]);
+	//test5("output.bmp", 1020, 1080);
+	//mainTest(argv[1]);
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	//BMP bmp9("zzz1.bmp");
 	//BMP bmp9("red-box-background.bmp");
@@ -129,9 +147,6 @@ int main() {
 	//test6("www1.bmp", 0, 960, sectors);
 
 	//test9("xd.bmp", 0, 5405);
-	//test10("image1.bmp", sectors);
-	test6("sdsd.bmp", 0, 408, sectors);
+	//test6("sdsd.bmp", 0, 408, sectors);
 	//test4("sdsd.bmp");
 
-	return 0;
-}
