@@ -1,4 +1,9 @@
 #include <stdlib.h>
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <streambuf>
+#include <algorithm>
 
 /*
 int pdfSeparate(const char* filename, const char* dirname) {
@@ -7,6 +12,10 @@ int pdfSeparate(const char* filename, const char* dirname) {
 	system("ls | wc -l");
 }
 */
+
+int readPagesNumber(const char* filename) {
+	return 0;
+}
 
 // tutaj zrobić string.format
 const char* separatePage(const char* filename, int pageNumber) {
@@ -65,5 +74,96 @@ void printSectors(std::vector<Sector>& sectors) {
 	for(auto it = sectors.begin(); it != sectors.end(); ++it) {
         std::cout << "(" << it->left << "," << it->right << "," << it->top << "," << it->bottom << ")" << std::endl;
     }
+}
+
+void findAndReplaceAll(std::string& data, std::string toSearch, std::string replaceStr)
+{
+    // Get the first occurrence
+    size_t pos = data.find(toSearch);
+    // Repeat till end is reached
+    while( pos != std::string::npos)
+    {
+        // Replace this occurrence of Sub String
+        data.replace(pos, toSearch.size(), replaceStr);
+        // Get the next occurrence from the current position
+        pos =data.find(toSearch, pos + replaceStr.size());
+    }
+}
+
+template<char delimiter>
+class WordDelimitedBy : public std::string
+{};
+
+void extractText(const char* inputFilename, const char* outputFilename) {
+	std::ifstream ifs{ inputFilename, std::ios_base::binary };
+	std::ofstream ofs{ outputFilename, std::ios_base::binary };
+    if (!ofs) {
+        throw std::runtime_error("ofs error");
+    }
+    if (!ifs) {
+        throw std::runtime_error("ifs error");
+    }
+
+	std::string text((std::istreambuf_iterator<char>(ifs)),
+	                  std::istreambuf_iterator<char>());
+	findAndReplaceAll(text, "***", "*");
+	//ofs.write(text.c_str(), text.size());
+
+	std::istringstream iss(text);
+	std::vector<std::string> results;
+	std::string word, paragraph;
+	while(!iss.eof()) {
+
+		//getline(iss, word);
+		//std::cout << word << std::endl;
+
+		getline(iss, word);
+		if (word != "*") {
+			//std::cout << word << std::endl;
+			word += '\n';
+			paragraph += word;
+		} else {
+			std::cout << paragraph << std::endl;
+			paragraph = "";
+		}
+
+
+
+		/*
+		if (word == "*") {
+			while(word != "*" && !iss.eof()) {
+				paragraph += word;
+				std::cout << word << std::endl;
+				getline(iss, word);
+			}
+		} else {
+			std::cout << word << std::endl;
+		}*/
+
+
+		//std::cout << paragraph;
+		//paragraph = "";
+
+		/*
+		ifs >> std::noskipws >> word;
+		std::cout << "|||" << word << ":::";
+
+		if (word == "*") {
+			std::cout << word;
+			word = "";
+		}*/
+	}
+
+
+	/*
+	std::istringstream iss(text, std::noskipws);
+	std::vector<std::string> results((std::istream_iterator<WordDelimitedBy<'*'>>(iss)),
+	                                  std::istream_iterator<WordDelimitedBy<'*'>>());	
+	for (std::string word : results) {
+	    ofs.write(word.c_str(), word.size());
+	    ofs << " ";
+	}
+	*/
+
 }
 

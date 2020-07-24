@@ -163,6 +163,10 @@ struct BMP {
     bool is_pixel_white(int row, int col);
     void colorX(int,int);
     void colorY(int yStart, int yEnd);
+
+    void stripsY(int yStart, int yEnd, std::vector<std::pair<int,int>>& strips);
+    void fillWithColor(int xStart, int yStart, int xEnd, int yEnd, int colR, int colG, int colB);
+
     // Sectors* discover_sectors_y();
     // Sectors* discover_sectors_x();
     // bool IsSectorStartX(int index);
@@ -176,11 +180,11 @@ struct BMP {
     int colorXxxxxRight(int yStart, int yEnd);
 
     void countLines(std::vector<std::pair<int,int>> lines, bool (*func)(Pixel p));
-    void removeArtifacts(bool (*func)(Pixel p));
-    void findThreshold(int threshold);
+    //void removeArtifacts(bool (*func)(Pixel p));
+    //void findThreshold(int threshold);
     void readParagraph(Sector s, Paragraph p);
 
-    void saveSectorToFile(Sector s, const char* _filename);
+    void cropToFile(Sector s, const char* _filename);
 
     void readParagraphs();
     void removeAlpha();

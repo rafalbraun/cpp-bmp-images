@@ -4,3 +4,5 @@
 a.out
 tmp/
 images/
+documents/*
+out.txt

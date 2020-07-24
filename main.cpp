@@ -41,6 +41,9 @@ convert output.png -background white -flatten output.png
 makefile cpp multiple main
 */
 int main(int argc, char* argv[]) {
+	extractText("/home/coi.local/rbraun/IdeaProjects/cpp/cpp-bmp-images/David_Graeber-Debt_The_First_5,000_Years.txt", "out.txt");
+	return 0;
+
 	//pdfSeparate("./documents/rozmowa.pdf", "./tmp");
 	//int count = countFiles("./tmp");
 	//convertPdfToBmp("./images/filename-20.bmp", "./output.bmp");
@@ -48,14 +51,38 @@ int main(int argc, char* argv[]) {
 	//std::vector<Sector> sectors;
 	//const char* filename = (argc == 2) ? argv[1] : "decline.bmp";
 
-	BMP bmp("./images/aaa.bmp");
+	//BMP bmp("./images/aaa.bmp");
+	std::vector<std::pair<int,int>> strips;
+	BMP bmp("./documents/Preface_clear.bmp");
 	bmp.removeAlpha();
 	bmp.flatten(150);
+	//bmp.colorX(0, bmp.bmp_info_header.width);
 	bmp.colorY(0, bmp.bmp_info_header.height);
-	bmp.fragment("./tmp");
+	bmp.stripsY(0, bmp.bmp_info_header.height, strips);
+
+	int tmp = -1;
+	for(auto iter : strips) {
+		if (tmp > 0) {
+			std::cout << tmp << " - " << iter.first << " : " << iter.first - tmp << std::endl;
+		}
+		
+		//std::cout << iter.first << " " << iter.second << " : " << iter.second - iter.first << std::endl;
+		
+		int diff = iter.first - tmp;
+		if (diff < 25) {
+			std::cout << "diff: " << diff << std::endl;
+			bmp.fillWithColor(0, tmp, bmp.bmp_info_header.width, iter.first, 255,255,255);
+		}
+
+		tmp = iter.second;
+	}
+
+	//bmp.fragment("./tmp");
 	bmp.write("out.bmp");
 	return 0;
 
+	// (216, 78)
+	// (1309, 78)
 
 	//convertPdfToBmp("./dir2/sample-10");
 
@@ -87,7 +114,7 @@ int main(int argc, char* argv[]) {
 	for (int i=1; i<sectors.size(); i++) {
 		//const char* fname = ("tmp_" + std::to_string(i) + ".bmp").c_str();
 		//std::cout << fname << std::endl;
-		bmp.saveSectorToFile(sectors[i], "tmp.bmp");
+		bmp.cropToFile(sectors[i], "tmp.bmp");
 		std::cout << ocr("tmp.bmp", "pol");
 	}*/
 
