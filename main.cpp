@@ -4,7 +4,7 @@
 //#include "tesseract.hpp"
 
 #include "helpers.cpp"
-#include "test.cpp"
+//#include "test.cpp"
 
 /*
 //
@@ -41,9 +41,7 @@ convert output.png -background white -flatten output.png
 makefile cpp multiple main
 */
 int main(int argc, char* argv[]) {
-	testFileReadWrite();
-	testExtractText();
-	testExtractTextWithFormatting();
+	//mainTest();
 
 	//extractText("./text1.txt", "out.txt");
 	//extractTextWithFormatting("./text2.txt", "out.txt");
