@@ -41,7 +41,12 @@ convert output.png -background white -flatten output.png
 makefile cpp multiple main
 */
 int main(int argc, char* argv[]) {
-	extractText("/home/coi.local/rbraun/IdeaProjects/cpp/cpp-bmp-images/David_Graeber-Debt_The_First_5,000_Years.txt", "out.txt");
+	testFileReadWrite();
+	testExtractText();
+	testExtractTextWithFormatting();
+
+	//extractText("./text1.txt", "out.txt");
+	//extractTextWithFormatting("./text2.txt", "out.txt");
 	return 0;
 
 	//pdfSeparate("./documents/rozmowa.pdf", "./tmp");

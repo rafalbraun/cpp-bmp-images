@@ -1,10 +1,16 @@
 #include <stdlib.h>
+#include <string>
+#include <fstream>
+#include <cstdio>
 
-// "test1.bmp"
-void test1(const char* filename) {
-	BMP bmp1(filename);
+void testFileReadWrite() {
+	std::string filename = "./images/output.bmp", output = "out.bmp";
+	std::remove(output.c_str());
+	BMP bmp1(filename.c_str());
 	bmp1.colorX(0, bmp1.bmp_info_header.width);
-	bmp1.write("out.bmp");
+	bmp1.write(output.c_str());
+    std::ifstream ifs(output.c_str());
+	std::cout << "[TEST] testFileReadWrite: " << ifs.good() << std::endl;
 }
 
 // "test1.bmp"
@@ -154,4 +160,16 @@ void testThreshold(const char* filename) {
 	int threshold = 150;
 	//bmp1.findThreshold(threshold);
 	bmp1.write("tmp.bmp");
+}
+
+void testExtractText() {
+	extractText("./test/text1.txt", "out.txt");
+	bool result = compareFiles("./test/text1.ref", "out.txt");
+	std::cout << "[TEST] testExtractText: " << result << std::endl;
+}
+
+void testExtractTextWithFormatting() {
+	extractTextWithFormatting("./test/text2.txt", "out.txt");
+	bool result = compareFiles("./test/text2.ref", "out.txt");
+	std::cout << "[TEST] testExtractTextWithFormatting: " << result << std::endl;
 }

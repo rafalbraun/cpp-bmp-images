@@ -90,9 +90,15 @@ void findAndReplaceAll(std::string& data, std::string toSearch, std::string repl
     }
 }
 
-template<char delimiter>
-class WordDelimitedBy : public std::string
-{};
+static std::string STAR  = "*";
+static std::string EQUAL = "=";
+
+/*
+	wraz z * możemy umieścić info o formatowaniu paragrafu, w tej funkcji możemy sparsować to info
+*/
+void parseFormatting(std::string word, std::string& format) {
+	format = "::format::" + word;
+}
 
 void extractText(const char* inputFilename, const char* outputFilename) {
 	std::ifstream ifs{ inputFilename, std::ios_base::binary };
@@ -106,64 +112,70 @@ void extractText(const char* inputFilename, const char* outputFilename) {
 
 	std::string text((std::istreambuf_iterator<char>(ifs)),
 	                  std::istreambuf_iterator<char>());
-	findAndReplaceAll(text, "***", "*");
-	//ofs.write(text.c_str(), text.size());
+	findAndReplaceAll(text, "***", STAR );
 
 	std::istringstream iss(text);
 	std::vector<std::string> results;
-	std::string word, paragraph;
+	std::string word, paragraph, format;
 	while(!iss.eof()) {
 
-		//getline(iss, word);
-		//std::cout << word << std::endl;
+		getline(iss, word);
+		if (word != STAR) {
+			paragraph = paragraph + word + '\n';
+		} else {
+			ofs << paragraph;
+			paragraph = "";
+			//std::cout << "---" << std::endl;
+		}
+	}
+}
+
+void extractTextWithFormatting(const char* inputFilename, const char* outputFilename) {
+	std::ifstream ifs{ inputFilename, std::ios_base::binary };
+	std::ofstream ofs{ outputFilename, std::ios_base::binary };
+    if (!ofs) {
+        throw std::runtime_error("ofs error");
+    }
+    if (!ifs) {
+        throw std::runtime_error("ifs error");
+    }
+
+	std::string text((std::istreambuf_iterator<char>(ifs)),
+	                  std::istreambuf_iterator<char>());
+	findAndReplaceAll(text, "***", STAR );
+
+	std::istringstream iss(text);
+	std::vector<std::string> results;
+	std::string word, paragraph, format;
+	while(!iss.eof()) {
 
 		getline(iss, word);
-		if (word != "*") {
-			//std::cout << word << std::endl;
-			word += '\n';
-			paragraph += word;
+		if (word != STAR) {
+			paragraph = paragraph + word + '\n';
 		} else {
-			std::cout << paragraph << std::endl;
+			getline(iss, word);
+			parseFormatting(word, format);
+
+			ofs << paragraph;
 			paragraph = "";
+			ofs << format << std::endl;
+			ofs << "---" << std::endl;
 		}
-
-
-
-		/*
-		if (word == "*") {
-			while(word != "*" && !iss.eof()) {
-				paragraph += word;
-				std::cout << word << std::endl;
-				getline(iss, word);
-			}
-		} else {
-			std::cout << word << std::endl;
-		}*/
-
-
-		//std::cout << paragraph;
-		//paragraph = "";
-
-		/*
-		ifs >> std::noskipws >> word;
-		std::cout << "|||" << word << ":::";
-
-		if (word == "*") {
-			std::cout << word;
-			word = "";
-		}*/
 	}
-
-
-	/*
-	std::istringstream iss(text, std::noskipws);
-	std::vector<std::string> results((std::istream_iterator<WordDelimitedBy<'*'>>(iss)),
-	                                  std::istream_iterator<WordDelimitedBy<'*'>>());	
-	for (std::string word : results) {
-	    ofs.write(word.c_str(), word.size());
-	    ofs << " ";
-	}
-	*/
 
 }
 
+bool compareFiles(const char* inputFilename1, const char* inputFilename2) {
+	std::ifstream ifs1{ inputFilename1, std::ios_base::binary },
+				  ifs2{ inputFilename2, std::ios_base::binary };
+
+	std::string word1, word2;
+	while(!ifs1.eof() && !ifs2.eof()) {
+		getline(ifs1, word1);
+		getline(ifs2, word2);
+		if (word1 != word2) {
+			return false;
+		}
+	}
+	return true;
+}
